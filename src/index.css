@@ -1,92 +1,69 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 222 47% 11%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 222 84% 5%;
 
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 224 71% 4%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 224 71% 4%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 224 71% 4%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary-foreground: 222 47% 11%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 217 33% 17%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 217 33% 17%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
     --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
@@ -96,6 +73,83 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/80 dark:bg-gray-900/70 backdrop-blur-lg border border-white/20 dark:border-gray-800/30 rounded-2xl shadow-glass;
+  }
+  
+  .neo-card {
+    @apply bg-white dark:bg-gray-900 rounded-2xl shadow-neo border border-gray-100 dark:border-gray-800;
+  }
+  
+  .float-card {
+    @apply bg-white dark:bg-gray-900 rounded-2xl shadow-float border border-gray-100 dark:border-gray-800 transition-all duration-300 hover:translate-y-[-5px];
+  }
+  
+  .text-gradient {
+    @apply bg-gradient-to-r from-booking-secondary to-booking-accent bg-clip-text text-transparent;
+  }
+  
+  .btn-primary {
+    @apply px-6 py-3 bg-booking-secondary text-white rounded-xl font-medium transition-all duration-300 hover:shadow-lg active:scale-95;
+  }
+  
+  .btn-secondary {
+    @apply px-6 py-3 bg-white dark:bg-gray-800 text-booking-secondary dark:text-white rounded-xl font-medium border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:shadow-md active:scale-95;
+  }
+  
+  .btn-ghost {
+    @apply px-6 py-3 bg-transparent text-booking-secondary dark:text-white rounded-xl font-medium transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl border-2 border-transparent focus:border-booking-secondary dark:focus:border-booking-secondary outline-none transition-all duration-200;
+  }
+  
+  .chip {
+    @apply inline-flex items-center px-4 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full text-sm font-medium transition-all duration-200 hover:bg-gray-200 dark:hover:bg-gray-700;
+  }
+  
+  .chip-active {
+    @apply inline-flex items-center px-4 py-1.5 bg-booking-secondary/10 dark:bg-booking-secondary/20 text-booking-secondary rounded-full text-sm font-medium transition-all duration-200;
+  }
+  
+  .avatar {
+    @apply rounded-full object-cover border-2 border-white dark:border-gray-800 shadow-md;
+  }
+  
+  .section-title {
+    @apply text-2xl font-bold mb-6;
+  }
+  
+  .page-container {
+    @apply max-w-screen-xl mx-auto px-4 sm:px-6 py-8;
+  }
+}
+
+@layer utilities {
+  .scroll-snap-x {
+    scroll-snap-type: x mandatory;
+  }
+  
+  .scroll-snap-center {
+    scroll-snap-align: center;
+  }
+  
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .text-balance {
+    text-wrap: balance;
   }
 }
