@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import Layout from "@/components/Layout";
 import Index from "./pages/Index";
 import Categories from "./pages/Categories";
+import ExpertProfile from "./pages/ExpertProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
               <Route index element={<Index />} />
               <Route path="/categories" element={<Categories />} />
               <Route path="/categories/:categoryId" element={<Categories />} />
+              <Route path="/expert/:expertId" element={<ExpertProfile />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             </Route>
             <Route path="*" element={<NotFound />} />

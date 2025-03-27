@@ -69,6 +69,10 @@ const Index = () => {
     toast.success(`Exploring ${categories.find(c => c.id === categoryId).name}`);
   };
 
+  const handleExpertClick = (expertId) => {
+    navigate(`/expert/${expertId}`);
+  };
+
   return (
     <div className="page-container animate-fade-in">
       {/* Hero section with search */}
@@ -157,7 +161,7 @@ const Index = () => {
           {featuredExperts.map((expert) => (
             <div 
               key={expert.id}
-              onClick={() => navigate(`/expert/${expert.id}`)}
+              onClick={() => handleExpertClick(expert.id)}
               className="float-card p-4 flex items-center space-x-4 cursor-pointer"
             >
               <img 
