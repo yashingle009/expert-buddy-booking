@@ -45,6 +45,9 @@ const Layout = () => {
     { name: "Logout", icon: <LogOut size={24} /> },
   ];
 
+  // Check if the current path is an expert profile page
+  const isExpertProfilePage = location.pathname.startsWith('/expert/');
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Header */}
@@ -81,26 +84,28 @@ const Layout = () => {
         <Outlet />
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-t border-border h-16">
-        <div className="grid grid-cols-4 h-full max-w-screen-xl mx-auto">
-          {navigationItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <NavLink
-                key={item.name}
-                to={item.path}
-                className={`flex flex-col items-center justify-center transition-all duration-200 ${
-                  isActive ? "text-booking-secondary scale-105" : "text-gray-500 dark:text-gray-400"
-                }`}
-              >
-                {item.icon}
-                <span className="text-xs mt-1 font-medium">{item.name}</span>
-              </NavLink>
-            );
-          })}
-        </div>
-      </nav>
+      {/* Bottom Navigation - conditionally rendered */}
+      {!isExpertProfilePage && (
+        <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-t border-border h-16">
+          <div className="grid grid-cols-4 h-full max-w-screen-xl mx-auto">
+            {navigationItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <NavLink
+                  key={item.name}
+                  to={item.path}
+                  className={`flex flex-col items-center justify-center transition-all duration-200 ${
+                    isActive ? "text-booking-secondary scale-105" : "text-gray-500 dark:text-gray-400"
+                  }`}
+                >
+                  {item.icon}
+                  <span className="text-xs mt-1 font-medium">{item.name}</span>
+                </NavLink>
+              );
+            })}
+          </div>
+        </nav>
+      )}
 
       {/* Side Drawer */}
       <div 
