@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Categories from "./pages/Categories";
 import ExpertProfile from "./pages/ExpertProfile";
 import Bookings from "./pages/Bookings";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
               <Route path="/categories/:categoryId" element={<Categories />} />
               <Route path="/expert/:expertId" element={<ExpertProfile />} />
               <Route path="/bookings" element={<Bookings />} />
+              <Route path="/profile" element={<Profile />} />
               <Route path="*" element={<NotFound />} />
             </Route>
             <Route path="*" element={<NotFound />} />
