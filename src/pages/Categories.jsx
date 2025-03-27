@@ -25,7 +25,7 @@ const Categories = () => {
     { id: "life", name: "Life", icon: "🧠", count: 53 },
     { id: "realestate", name: "Real Estate", icon: "🏠", count: 87 },
   ];
-
+  
   const experts = [
     {
       id: "1",
@@ -162,6 +162,10 @@ const Categories = () => {
     navigate(`/categories/${category.id}`);
   };
 
+  const handleExpertClick = (expertId) => {
+    navigate(`/expert/${expertId}`);
+  };
+
   const filteredExperts = experts.filter(expert => {
     // Filter by search query
     if (searchQuery && !expert.name.toLowerCase().includes(searchQuery.toLowerCase()) && 
@@ -245,7 +249,7 @@ const Categories = () => {
             {filteredExperts.map((expert) => (
               <div 
                 key={expert.id}
-                onClick={() => navigate(`/expert/${expert.id}`)}
+                onClick={() => handleExpertClick(expert.id)}
                 className="neo-card overflow-hidden cursor-pointer"
               >
                 <div className="flex">
