@@ -9,6 +9,7 @@ import Layout from "@/components/Layout";
 import Index from "./pages/Index";
 import Categories from "./pages/Categories";
 import ExpertProfile from "./pages/ExpertProfile";
+import Bookings from "./pages/Bookings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
               <Route path="/categories" element={<Categories />} />
               <Route path="/categories/:categoryId" element={<Categories />} />
               <Route path="/expert/:expertId" element={<ExpertProfile />} />
+              <Route path="/bookings" element={<Bookings />} />
               <Route path="*" element={<NotFound />} />
             </Route>
             <Route path="*" element={<NotFound />} />
