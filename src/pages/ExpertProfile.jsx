@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
@@ -17,6 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const ExpertProfile = () => {
   const { expertId } = useParams();
@@ -24,6 +24,7 @@ const ExpertProfile = () => {
   const [selectedDate, setSelectedDate] = useState("Today");
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
   const [selectedCommunicationType, setSelectedCommunicationType] = useState("video");
+  const [selectedService, setSelectedService] = useState(null);
   
   // Mock expert data - in a real app this would come from an API
   const expert = {
@@ -129,6 +130,10 @@ const ExpertProfile = () => {
     // In a real app, this would navigate to a booking confirmation page
   };
 
+  const handleServiceSelect = (serviceId) => {
+    setSelectedService(serviceId === selectedService ? null : serviceId);
+  };
+
   const renderStars = (rating) => {
     return Array(5)
       .fill(0)
@@ -212,20 +217,32 @@ const ExpertProfile = () => {
         </p>
       </div>
       
-      {/* Services section */}
+      {/* Services section - now scrollable */}
       <div className="px-5 py-4 bg-gray-50 dark:bg-gray-800">
         <h2 className="text-xl font-bold mb-3">Services</h2>
-        <div className="grid grid-cols-3 gap-3">
-          {expert.services.map((service) => (
-            <Card key={service.id} className="bg-white dark:bg-gray-900 border-0 shadow-sm">
-              <CardContent className="p-4 text-center">
-                <div className="text-3xl mb-2">{service.icon}</div>
-                <h3 className="font-medium text-sm">{service.name}</h3>
-                <p className="text-xs text-booking-secondary font-semibold mt-1">{service.price}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <ScrollArea className="h-[150px] w-full">
+          <div className="pr-4">
+            {expert.services.map((service) => (
+              <Card 
+                key={service.id} 
+                className={`bg-white dark:bg-gray-900 border mb-3 shadow-sm transition-all duration-200 cursor-pointer ${
+                  selectedService === service.id 
+                    ? "border-booking-secondary ring-2 ring-booking-secondary/20" 
+                    : "border-transparent hover:border-gray-200 dark:hover:border-gray-700"
+                }`}
+                onClick={() => handleServiceSelect(service.id)}
+              >
+                <CardContent className="p-4 flex items-center">
+                  <div className="text-3xl mr-4">{service.icon}</div>
+                  <div className="flex-1">
+                    <h3 className="font-medium">{service.name}</h3>
+                    <p className="text-sm text-booking-secondary font-semibold">{service.price}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </ScrollArea>
       </div>
       
       {/* Schedule appointment section */}
