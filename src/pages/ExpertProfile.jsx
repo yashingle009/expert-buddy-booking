@@ -26,7 +26,6 @@ const ExpertProfile = () => {
   const [selectedCommunicationType, setSelectedCommunicationType] = useState("video");
   const [selectedService, setSelectedService] = useState(null);
   
-  // Mock expert data - in a real app this would come from an API
   const expert = {
     id: expertId,
     name: "Dr. Sarah Mitchell",
@@ -151,14 +150,12 @@ const ExpertProfile = () => {
 
   return (
     <div className="pb-24 flex flex-col">
-      {/* Expert header with image background */}
       <div 
         className="relative h-[340px] w-full bg-cover bg-center"
         style={{
           backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.7)), url(${expert.image})`,
         }}
       >
-        {/* Top navigation */}
         <div className="flex justify-between items-center p-4">
           <button 
             onClick={() => navigate(-1)} 
@@ -176,7 +173,6 @@ const ExpertProfile = () => {
           </div>
         </div>
         
-        {/* Expert info at bottom of image */}
         <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
           <h1 className="text-2xl font-bold">{expert.name}</h1>
           <p className="text-white/90 mb-2">{expert.title}</p>
@@ -199,7 +195,6 @@ const ExpertProfile = () => {
         </div>
       </div>
       
-      {/* Stats section */}
       <div className="grid grid-cols-3 divide-x divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900">
         {expert.stats.map((stat, index) => (
           <div key={index} className="p-4 text-center">
@@ -209,7 +204,6 @@ const ExpertProfile = () => {
         ))}
       </div>
       
-      {/* About section */}
       <div className="px-5 py-4 bg-white dark:bg-gray-900">
         <h2 className="text-xl font-bold mb-3">About</h2>
         <p className="text-gray-700 dark:text-gray-300 text-sm">
@@ -217,7 +211,6 @@ const ExpertProfile = () => {
         </p>
       </div>
       
-      {/* Services section - now scrollable */}
       <div className="px-5 py-4 bg-gray-50 dark:bg-gray-800">
         <h2 className="text-xl font-bold mb-3">Services</h2>
         <ScrollArea className="h-[150px] w-full">
@@ -245,11 +238,9 @@ const ExpertProfile = () => {
         </ScrollArea>
       </div>
       
-      {/* Schedule appointment section */}
       <div className="px-5 py-4 bg-white dark:bg-gray-900">
         <h2 className="text-xl font-bold mb-3">Schedule Appointment</h2>
         
-        {/* Communication type selection */}
         <div className="grid grid-cols-3 gap-3 mb-4">
           <Button
             variant="outline"
@@ -289,7 +280,6 @@ const ExpertProfile = () => {
           </Button>
         </div>
         
-        {/* Date selection */}
         <div className="grid grid-cols-6 gap-2 mb-4">
           {expert.availability.dates.map((date, index) => (
             <div 
@@ -312,7 +302,6 @@ const ExpertProfile = () => {
           ))}
         </div>
         
-        {/* Time slot selection */}
         <div className="grid grid-cols-3 gap-2">
           {expert.availability.timeSlots.map((slot, index) => (
             <div
@@ -330,7 +319,6 @@ const ExpertProfile = () => {
         </div>
       </div>
       
-      {/* Recent reviews section */}
       <div className="px-5 py-4 bg-gray-50 dark:bg-gray-800">
         <h2 className="text-xl font-bold mb-3">Recent Reviews</h2>
         <div className="space-y-3">
@@ -356,7 +344,6 @@ const ExpertProfile = () => {
         </div>
       </div>
       
-      {/* Book consultation button */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
         <Button 
           className="w-full bg-booking-secondary"
