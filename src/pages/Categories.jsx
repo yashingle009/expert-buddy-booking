@@ -1,10 +1,11 @@
-
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Search, Filter, Star, MapPin, ChevronDown, X } from "lucide-react";
+import { toast } from "sonner";
 
 const Categories = () => {
   const navigate = useNavigate();
+  const { categoryId } = useParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -17,12 +18,12 @@ const Categories = () => {
   // Mock data
   const categories = [
     { id: "all", name: "All", icon: "🔍", count: 580 },
-    { id: "1", name: "Legal", icon: "⚖️", count: 124 },
-    { id: "2", name: "Finance", icon: "💼", count: 98 },
-    { id: "3", name: "Tax", icon: "📊", count: 76 },
-    { id: "4", name: "Business", icon: "🏢", count: 142 },
-    { id: "5", name: "Immigration", icon: "🌎", count: 53 },
-    { id: "6", name: "Real Estate", icon: "🏠", count: 87 },
+    { id: "tax", name: "Tax", icon: "💼", count: 124 },
+    { id: "legal", name: "Legal", icon: "⚖️", count: 98 },
+    { id: "finance", name: "Finance", icon: "📊", count: 76 },
+    { id: "career", name: "Career", icon: "🚀", count: 142 },
+    { id: "life", name: "Life", icon: "🧠", count: 53 },
+    { id: "realestate", name: "Real Estate", icon: "🏠", count: 87 },
   ];
 
   const experts = [
@@ -60,7 +61,7 @@ const Categories = () => {
       location: "San Francisco",
       price: "$180/hour",
       experience: "8 years",
-      category: "Immigration",
+      category: "Legal",
     },
     {
       id: "4",
@@ -98,7 +99,45 @@ const Categories = () => {
       experience: "9 years",
       category: "Real Estate",
     },
+    {
+      id: "7",
+      name: "David Taylor",
+      specialty: "Career Coach",
+      rating: 4.7,
+      reviews: 82,
+      image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
+      location: "Seattle",
+      price: "$100/hour",
+      experience: "7 years",
+      category: "Career",
+    },
+    {
+      id: "8",
+      name: "Susan Miller",
+      specialty: "Life Coach",
+      rating: 4.8,
+      reviews: 91,
+      image: "https://images.unsplash.com/photo-1525786210598-d527194d3e9a?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
+      location: "Portland",
+      price: "$90/hour",
+      experience: "5 years",
+      category: "Life",
+    },
   ];
+
+  useEffect(() => {
+    if (categoryId) {
+      const category = categories.find(cat => cat.id === categoryId);
+      if (category) {
+        setSelectedCategory(category.name);
+        toast.info(`Showing ${category.name} experts`);
+      } else {
+        setSelectedCategory("All");
+      }
+    } else {
+      setSelectedCategory("All");
+    }
+  }, [categoryId]);
 
   const toggleFilter = () => {
     setIsFilterOpen(!isFilterOpen);
@@ -114,7 +153,13 @@ const Categories = () => {
 
   const applyFilters = () => {
     toggleFilter();
+    toast.success("Filters applied successfully");
     // In a real app, this would filter the experts list
+  };
+
+  const handleCategorySelect = (category) => {
+    setSelectedCategory(category.name);
+    navigate(`/categories/${category.id}`);
   };
 
   const filteredExperts = experts.filter(expert => {
@@ -124,8 +169,9 @@ const Categories = () => {
       return false;
     }
     
-    // Filter by category
-    if (selectedCategory !== "All" && expert.category !== selectedCategory) {
+    // Filter by category (case insensitive comparison)
+    if (selectedCategory !== "All" && 
+        !expert.category.toLowerCase().includes(selectedCategory.toLowerCase())) {
       return false;
     }
     
@@ -172,7 +218,7 @@ const Categories = () => {
             {categories.map((category) => (
               <button
                 key={category.id}
-                onClick={() => setSelectedCategory(category.name)}
+                onClick={() => handleCategorySelect(category)}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-full whitespace-nowrap transition-all duration-200 ${
                   selectedCategory === category.name
                     ? "bg-booking-secondary text-white"
@@ -256,6 +302,7 @@ const Categories = () => {
                 setSearchQuery("");
                 setSelectedCategory("All");
                 resetFilters();
+                navigate("/categories");
               }}
               className="mt-4 btn-primary"
             >

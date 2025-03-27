@@ -10,6 +10,7 @@ import {
   MapPin
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -44,12 +45,12 @@ const Index = () => {
 
   // Mock data for categories
   const categories = [
-    { id: "1", name: "Tax Consultants", icon: "💼" },
-    { id: "2", name: "Legal Advisors", icon: "⚖️" },
-    { id: "3", name: "Financial Advisors", icon: "📊" },
-    { id: "4", name: "Career Coaches", icon: "🚀" },
-    { id: "5", name: "Life Coaches", icon: "🧠" },
-    { id: "6", name: "Real Estate Advisors", icon: "🏠" }
+    { id: "tax", name: "Tax Consultants", icon: "💼" },
+    { id: "legal", name: "Legal Advisors", icon: "⚖️" },
+    { id: "finance", name: "Financial Advisors", icon: "📊" },
+    { id: "career", name: "Career Coaches", icon: "🚀" },
+    { id: "life", name: "Life Coaches", icon: "🧠" },
+    { id: "realestate", name: "Real Estate Advisors", icon: "🏠" }
   ];
 
   // Mock data for recent bookings
@@ -62,6 +63,11 @@ const Index = () => {
       image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80"
     }
   ];
+
+  const handleCategoryClick = (categoryId) => {
+    navigate(`/categories/${categoryId}`);
+    toast.success(`Exploring ${categories.find(c => c.id === categoryId).name}`);
+  };
 
   return (
     <div className="page-container animate-fade-in">
@@ -93,7 +99,7 @@ const Index = () => {
           {categories.slice(0, 6).map((category) => (
             <button 
               key={category.id}
-              onClick={() => navigate("/categories")}
+              onClick={() => handleCategoryClick(category.id)}
               className="neo-card p-4 flex flex-col items-center justify-center aspect-square transition-all duration-200 hover:scale-105 active:scale-95"
             >
               <span className="text-2xl mb-2">{category.icon}</span>
