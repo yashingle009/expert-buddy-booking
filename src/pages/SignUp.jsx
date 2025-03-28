@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Navigate, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 
@@ -13,6 +15,7 @@ const SignUpPage = () => {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [userType, setUserType] = useState("user");
   const [isLoading, setIsLoading] = useState(false);
 
   // If user is already signed in, redirect to profile
@@ -29,15 +32,22 @@ const SignUpPage = () => {
     setTimeout(() => {
       setIsLoading(false);
       
-      // Sign in the user with the provided information
+      // Sign in the user with the provided information including user type
       signIn({
         firstName,
         lastName,
-        email
+        email,
+        userType
       });
       
-      toast.success("Account created successfully");
-      navigate("/profile");
+      toast.success(`Account created successfully as ${userType === "expert" ? "an expert" : "a user"}`);
+      
+      // Redirect based on user type
+      if (userType === "expert") {
+        navigate("/expert-onboarding");
+      } else {
+        navigate("/profile");
+      }
     }, 1000);
   };
 
@@ -104,6 +114,27 @@ const SignUpPage = () => {
                 required
               />
             </div>
+            
+            <div className="pt-2">
+              <label className="block text-sm font-medium mb-3">
+                I want to join as:
+              </label>
+              <RadioGroup 
+                value={userType} 
+                onValueChange={setUserType}
+                className="flex gap-6"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="user" id="user" />
+                  <Label htmlFor="user">User</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="expert" id="expert" />
+                  <Label htmlFor="expert">Expert</Label>
+                </div>
+              </RadioGroup>
+            </div>
+            
             <div>
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Creating Account..." : "Sign Up"}

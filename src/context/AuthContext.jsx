@@ -110,7 +110,8 @@ export const AuthProvider = ({ children }) => {
         signIn, 
         signOut, 
         updateProfile,
-        uploadProfileImage
+        uploadProfileImage,
+        isExpert: user?.userType === "expert"
       }}
     >
       {children}

@@ -31,15 +31,26 @@ const SignInPage = () => {
       const firstName = email.split('@')[0].split('.')[0];
       const lastName = email.split('@')[0].split('.')[1] || '';
       
+      // For sign-in, simulate checking if this user is an expert
+      // In a real app, this would be retrieved from your database
+      const userType = email.includes('expert') ? 'expert' : 'user';
+      
       // Sign in the user
       signIn({
         firstName: firstName.charAt(0).toUpperCase() + firstName.slice(1),
         lastName: lastName ? lastName.charAt(0).toUpperCase() + lastName.slice(1) : '',
-        email: email
+        email: email,
+        userType: userType
       });
       
       toast.success("Signed in successfully");
-      navigate("/profile");
+      
+      // Redirect based on user type
+      if (userType === "expert") {
+        navigate("/expert-dashboard");
+      } else {
+        navigate("/profile");
+      }
     }, 1000);
   };
 

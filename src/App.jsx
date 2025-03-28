@@ -16,6 +16,8 @@ import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import NotFound from "./pages/NotFound";
 import AuthWrapper from "./components/AuthWrapper";
+import ExpertOnboarding from "./pages/ExpertOnboarding";
+import ExpertDashboard from "./pages/ExpertDashboard";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +42,18 @@ const App = () => {
                 {/* Auth Routes */}
                 <Route path="/sign-in" element={<SignIn />} />
                 <Route path="/sign-up" element={<SignUp />} />
+                
+                {/* Expert Routes */}
+                <Route path="/expert-onboarding" element={
+                  <AuthWrapper>
+                    <ExpertOnboarding />
+                  </AuthWrapper>
+                } />
+                <Route path="/expert-dashboard" element={
+                  <AuthWrapper>
+                    <ExpertDashboard />
+                  </AuthWrapper>
+                } />
                 
                 {/* Protected Routes */}
                 <Route path="/" element={<Layout />}>
