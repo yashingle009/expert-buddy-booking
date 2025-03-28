@@ -7,8 +7,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Calendar, Clock, DollarSign, Users, Star, Bell, Settings, MessageSquare } from "lucide-react";
+import { Calendar, Clock, DollarSign, Users, Star, Bell, Settings, MessageSquare, Loader } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ExpertDashboard = () => {
   const navigate = useNavigate();
@@ -17,8 +18,8 @@ const ExpertDashboard = () => {
   const [stats, setStats] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [metrics, setMetrics] = useState({
-    responseRate: 98,
-    completionRate: 95
+    responseRate: 0,
+    completionRate: 0
   });
 
   useEffect(() => {
@@ -45,7 +46,9 @@ const ExpertDashboard = () => {
         
         if (bookingsError) {
           console.error("Error fetching bookings:", bookingsError);
-          // If there's an error or table doesn't exist, use placeholder data
+          toast.error("Failed to load bookings data");
+          
+          // Use placeholder data if no bookings table exists
           setUpcomingBookings([
             { 
               id: 1, 
@@ -94,13 +97,20 @@ const ExpertDashboard = () => {
 
         if (statsError) {
           console.error("Error fetching stats:", statsError);
-          // Default stats
+          
+          // Default stats if expert_stats table doesn't exist
           setStats([
-            { title: "Total Clients", value: 26, icon: <Users size={20} /> },
-            { title: "Avg. Rating", value: "4.8", icon: <Star size={20} /> },
-            { title: "This Month", value: "$1,240", icon: <DollarSign size={20} /> },
-            { title: "Total Hours", value: "128", icon: <Clock size={20} /> },
+            { title: "Total Clients", value: 0, icon: <Users size={20} /> },
+            { title: "Avg. Rating", value: "0.0", icon: <Star size={20} /> },
+            { title: "This Month", value: "$0", icon: <DollarSign size={20} /> },
+            { title: "Total Hours", value: "0", icon: <Clock size={20} /> },
           ]);
+          
+          // Default metrics
+          setMetrics({
+            responseRate: 0,
+            completionRate: 0
+          });
         } else {
           // Format the stats data
           setStats([
@@ -111,12 +121,24 @@ const ExpertDashboard = () => {
           ]);
           
           // Set performance metrics
-          if (statsData) {
-            setMetrics({
-              responseRate: statsData.response_rate || 98,
-              completionRate: statsData.completion_rate || 95
-            });
-          }
+          setMetrics({
+            responseRate: statsData?.response_rate || 0,
+            completionRate: statsData?.completion_rate || 0
+          });
+        }
+        
+        // Fetch real-time performance metrics (if implemented)
+        const { data: performanceData, error: performanceError } = await supabase
+          .from('expert_performance')
+          .select('response_rate, completion_rate')
+          .eq('expert_id', user.id)
+          .single();
+          
+        if (!performanceError && performanceData) {
+          setMetrics({
+            responseRate: performanceData.response_rate || 0,
+            completionRate: performanceData.completion_rate || 0
+          });
         }
       } catch (error) {
         console.error("Error in fetchDashboardData:", error);
@@ -165,21 +187,39 @@ const ExpertDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        {stats.map((stat, index) => (
-          <Card key={index} className={isLoading ? "animate-pulse" : ""}>
-            <CardContent className="pt-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
-                  <p className="text-2xl font-bold">{stat.value}</p>
+        {isLoading ? (
+          // Loading skeletons for stats
+          Array(4).fill(0).map((_, index) => (
+            <Card key={index}>
+              <CardContent className="pt-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <Skeleton className="h-4 w-24 mb-2" />
+                    <Skeleton className="h-8 w-16" />
+                  </div>
+                  <Skeleton className="h-10 w-10 rounded-full" />
                 </div>
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                  {stat.icon}
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          // Actual stats content
+          stats.map((stat, index) => (
+            <Card key={index}>
+              <CardContent className="pt-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                    <p className="text-2xl font-bold">{stat.value}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                    {stat.icon}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -193,20 +233,22 @@ const ExpertDashboard = () => {
           <CardContent>
             <div className="space-y-4">
               {isLoading ? (
+                // Loading skeletons for bookings
                 Array(2).fill(0).map((_, index) => (
                   <div 
                     key={index} 
-                    className="flex items-center justify-between p-4 rounded-lg border border-border animate-pulse"
+                    className="flex items-center justify-between p-4 rounded-lg border border-border"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+                      <Skeleton className="h-10 w-10 rounded-full" />
                       <div>
-                        <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-                        <div className="h-3 w-40 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                        <Skeleton className="h-4 w-32 mb-2" />
+                        <Skeleton className="h-3 w-40" />
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                      <Skeleton className="h-6 w-20 rounded-full" />
+                      <Skeleton className="h-8 w-8 rounded-md" />
                     </div>
                   </div>
                 ))
@@ -280,21 +322,39 @@ const ExpertDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Response Rate</span>
-                <span className="font-medium">{metrics.responseRate}%</span>
-              </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div className="bg-booking-secondary h-2 rounded-full" style={{ width: `${metrics.responseRate}%` }}></div>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Completion Rate</span>
-                <span className="font-medium">{metrics.completionRate}%</span>
-              </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div className="bg-booking-secondary h-2 rounded-full" style={{ width: `${metrics.completionRate}%` }}></div>
-              </div>
+              {isLoading ? (
+                // Loading skeletons for metrics
+                <>
+                  <div className="flex justify-between items-center">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-12" />
+                  </div>
+                  <Skeleton className="h-2 w-full rounded-full" />
+                  <div className="flex justify-between items-center">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-12" />
+                  </div>
+                  <Skeleton className="h-2 w-full rounded-full" />
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Response Rate</span>
+                    <span className="font-medium">{metrics.responseRate}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div className="bg-booking-secondary h-2 rounded-full" style={{ width: `${metrics.responseRate}%` }}></div>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Completion Rate</span>
+                    <span className="font-medium">{metrics.completionRate}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div className="bg-booking-secondary h-2 rounded-full" style={{ width: `${metrics.completionRate}%` }}></div>
+                  </div>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
