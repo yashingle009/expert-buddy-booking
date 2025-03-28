@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -8,10 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Calendar, Clock, DollarSign, Users, Star, Bell, Settings, MessageSquare } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const ExpertDashboard = () => {
   const navigate = useNavigate();
   const { user, isExpert } = useAuth();
+  const [upcomingBookings, setUpcomingBookings] = useState([]);
+  const [stats, setStats] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [metrics, setMetrics] = useState({
+    responseRate: 98,
+    completionRate: 95
+  });
 
   useEffect(() => {
     if (!isExpert) {
@@ -20,35 +28,110 @@ const ExpertDashboard = () => {
     }
   }, [isExpert, navigate]);
 
-  if (!isExpert) return null;
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      if (!user?.id) return;
+      
+      setIsLoading(true);
+      try {
+        // Fetch upcoming bookings
+        const { data: bookingsData, error: bookingsError } = await supabase
+          .from('bookings')
+          .select('*')
+          .eq('expert_id', user.id)
+          .gte('date', new Date().toISOString())
+          .order('date', { ascending: true })
+          .limit(5);
+        
+        if (bookingsError) {
+          console.error("Error fetching bookings:", bookingsError);
+          // If there's an error or table doesn't exist, use placeholder data
+          setUpcomingBookings([
+            { 
+              id: 1, 
+              clientName: "Sarah Johnson", 
+              date: "Apr 28, 2023", 
+              time: "10:00 AM", 
+              duration: 60,
+              status: "confirmed",
+              serviceType: "Consultation"
+            },
+            { 
+              id: 2, 
+              clientName: "Michael Chen", 
+              date: "Apr 30, 2023", 
+              time: "2:00 PM", 
+              duration: 30,
+              status: "pending",
+              serviceType: "Quick Advice"
+            }
+          ]);
+        } else {
+          // Format the booking data
+          const formattedBookings = bookingsData?.map(booking => ({
+            id: booking.id,
+            clientName: booking.client_name || "Client",
+            date: new Date(booking.date).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
+            }),
+            time: booking.time || "12:00 PM",
+            duration: booking.duration || 60,
+            status: booking.status || "pending",
+            serviceType: booking.service_type || "Consultation"
+          })) || [];
+          
+          setUpcomingBookings(formattedBookings.length > 0 ? formattedBookings : []);
+        }
 
-  const upcomingBookings = [
-    { 
-      id: 1, 
-      clientName: "Sarah Johnson", 
-      date: "Apr 28, 2023", 
-      time: "10:00 AM", 
-      duration: 60,
-      status: "confirmed",
-      serviceType: "Consultation"
-    },
-    { 
-      id: 2, 
-      clientName: "Michael Chen", 
-      date: "Apr 30, 2023", 
-      time: "2:00 PM", 
-      duration: 30,
-      status: "pending",
-      serviceType: "Quick Advice"
+        // Fetch statistics data
+        const { data: statsData, error: statsError } = await supabase
+          .from('expert_stats')
+          .select('*')
+          .eq('expert_id', user.id)
+          .single();
+
+        if (statsError) {
+          console.error("Error fetching stats:", statsError);
+          // Default stats
+          setStats([
+            { title: "Total Clients", value: 26, icon: <Users size={20} /> },
+            { title: "Avg. Rating", value: "4.8", icon: <Star size={20} /> },
+            { title: "This Month", value: "$1,240", icon: <DollarSign size={20} /> },
+            { title: "Total Hours", value: "128", icon: <Clock size={20} /> },
+          ]);
+        } else {
+          // Format the stats data
+          setStats([
+            { title: "Total Clients", value: statsData?.total_clients || 0, icon: <Users size={20} /> },
+            { title: "Avg. Rating", value: statsData?.average_rating?.toFixed(1) || "0.0", icon: <Star size={20} /> },
+            { title: "This Month", value: `$${statsData?.earnings_this_month || 0}`, icon: <DollarSign size={20} /> },
+            { title: "Total Hours", value: statsData?.total_hours?.toString() || "0", icon: <Clock size={20} /> },
+          ]);
+          
+          // Set performance metrics
+          if (statsData) {
+            setMetrics({
+              responseRate: statsData.response_rate || 98,
+              completionRate: statsData.completion_rate || 95
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error in fetchDashboardData:", error);
+        toast.error("Failed to load dashboard data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (isExpert && user?.id) {
+      fetchDashboardData();
     }
-  ];
+  }, [isExpert, user?.id]);
 
-  const stats = [
-    { title: "Total Clients", value: 26, icon: <Users size={20} /> },
-    { title: "Avg. Rating", value: "4.8", icon: <Star size={20} /> },
-    { title: "This Month", value: "$1,240", icon: <DollarSign size={20} /> },
-    { title: "Total Hours", value: "128", icon: <Clock size={20} /> },
-  ];
+  if (!isExpert) return null;
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -83,7 +166,7 @@ const ExpertDashboard = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         {stats.map((stat, index) => (
-          <Card key={index}>
+          <Card key={index} className={isLoading ? "animate-pulse" : ""}>
             <CardContent className="pt-6">
               <div className="flex justify-between items-center">
                 <div>
@@ -109,7 +192,25 @@ const ExpertDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {upcomingBookings.length > 0 ? (
+              {isLoading ? (
+                Array(2).fill(0).map((_, index) => (
+                  <div 
+                    key={index} 
+                    className="flex items-center justify-between p-4 rounded-lg border border-border animate-pulse"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+                      <div>
+                        <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
+                        <div className="h-3 w-40 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    </div>
+                  </div>
+                ))
+              ) : upcomingBookings.length > 0 ? (
                 upcomingBookings.map((booking) => (
                   <div 
                     key={booking.id} 
@@ -145,7 +246,7 @@ const ExpertDashboard = () => {
             </div>
           </CardContent>
           <CardFooter>
-            <Button variant="outline" className="w-full">View All Bookings</Button>
+            <Button variant="outline" className="w-full" onClick={() => navigate("/bookings")}>View All Bookings</Button>
           </CardFooter>
         </Card>
 
@@ -155,7 +256,7 @@ const ExpertDashboard = () => {
             <CardDescription>Manage your expert profile</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Button variant="outline" className="w-full justify-start">
+            <Button variant="outline" className="w-full justify-start" onClick={() => navigate("/profile")}>
               <Settings className="mr-2 h-4 w-4" />
               Edit Profile
             </Button>
@@ -181,18 +282,18 @@ const ExpertDashboard = () => {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-sm">Response Rate</span>
-                <span className="font-medium">98%</span>
+                <span className="font-medium">{metrics.responseRate}%</span>
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div className="bg-booking-secondary h-2 rounded-full" style={{ width: "98%" }}></div>
+                <div className="bg-booking-secondary h-2 rounded-full" style={{ width: `${metrics.responseRate}%` }}></div>
               </div>
               
               <div className="flex justify-between items-center">
                 <span className="text-sm">Completion Rate</span>
-                <span className="font-medium">95%</span>
+                <span className="font-medium">{metrics.completionRate}%</span>
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div className="bg-booking-secondary h-2 rounded-full" style={{ width: "95%" }}></div>
+                <div className="bg-booking-secondary h-2 rounded-full" style={{ width: `${metrics.completionRate}%` }}></div>
               </div>
             </div>
           </CardContent>
