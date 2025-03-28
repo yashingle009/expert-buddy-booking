@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "@/components/ThemeProvider";
-import { useUser, SignOutButton } from "@clerk/clerk-react";
 import { 
   Home, 
   Grid3x3, 
@@ -25,7 +24,10 @@ const Layout = () => {
   const { theme, setTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const { isSignedIn, user } = useUser();
+  
+  // Placeholder for authentication state
+  const isSignedIn = true; // Replace with your auth logic later
+  const user = { firstName: "John", lastName: "Doe", primaryEmailAddress: { emailAddress: "john@example.com" } };
 
   const toggleDrawer = () => {
     setIsDrawerOpen(!isDrawerOpen);
@@ -50,6 +52,11 @@ const Layout = () => {
 
   // Check if the current path is an expert profile page
   const isExpertProfilePage = location.pathname.startsWith('/expert/');
+
+  const handleLogout = () => {
+    // Add your logout logic here later
+    navigate('/');
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -189,14 +196,13 @@ const Layout = () => {
               ))}
               
               {isSignedIn && (
-                <SignOutButton>
-                  <button
-                    className="flex items-center space-x-3 w-full p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-red-500"
-                  >
-                    <LogOut size={24} />
-                    <span>Logout</span>
-                  </button>
-                </SignOutButton>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center space-x-3 w-full p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-red-500"
+                >
+                  <LogOut size={24} />
+                  <span>Logout</span>
+                </button>
               )}
               
               <div className="mt-4 px-3 py-3 flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700">
