@@ -1,10 +1,11 @@
-
 import { useState } from "react";
 import { Navigate, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { getUserByEmail } from "@/utils/userStorage";
 
 const SignInPage = () => {
   const navigate = useNavigate();
@@ -18,40 +19,55 @@ const SignInPage = () => {
     return <Navigate to="/profile" replace />;
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // This is a placeholder for actual authentication logic
-    // Simulate sign-in with a timeout
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      console.log("Signing in with email:", email);
       
-      // Create user object with email and a generated name from email
-      const firstName = email.split('@')[0].split('.')[0];
-      const lastName = email.split('@')[0].split('.')[1] || '';
+      // Get the user from our simulated storage
+      const existingUser = getUserByEmail(email);
       
-      // For sign-in, simulate checking if this user is an expert
-      // In a real app, this would be retrieved from your database
-      const userType = email.includes('expert') ? 'expert' : 'user';
+      if (!existingUser) {
+        toast.error("User not found. Please sign up first.");
+        setIsLoading(false);
+        return;
+      }
       
-      // Sign in the user
-      signIn({
-        firstName: firstName.charAt(0).toUpperCase() + firstName.slice(1),
-        lastName: lastName ? lastName.charAt(0).toUpperCase() + lastName.slice(1) : '',
-        email: email,
-        userType: userType
-      });
+      // Get user type from Supabase
+      const { data, error } = await supabase
+        .from('user_types')
+        .select('user_type')
+        .eq('id', existingUser.id)
+        .single();
+      
+      if (error) {
+        console.error("Error fetching user type:", error);
+        // If no user type found, default to regular user
+        existingUser.userType = "user";
+      } else if (data) {
+        existingUser.userType = data.user_type;
+        console.log("Retrieved user type from database:", data.user_type);
+      }
+      
+      // Sign in the user (this will save to localStorage)
+      await signIn(existingUser);
       
       toast.success("Signed in successfully");
       
       // Redirect based on user type
-      if (userType === "expert") {
+      if (existingUser.userType === "expert") {
         navigate("/expert-dashboard");
       } else {
         navigate("/profile");
       }
-    }, 1000);
+    } catch (error) {
+      console.error("Error during sign in:", error);
+      toast.error("Failed to sign in");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

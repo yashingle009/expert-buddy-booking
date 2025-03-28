@@ -7,6 +7,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { addUserToStorage } from "@/utils/userStorage";
 
 const SignUpPage = () => {
   const navigate = useNavigate();
@@ -23,22 +25,42 @@ const SignUpPage = () => {
     return <Navigate to="/profile" replace />;
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // This is a placeholder for actual registration logic
-    // Simulate sign-up with a timeout
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // Generate a random UUID for the user ID since we're not using real auth
+      const userId = crypto.randomUUID();
       
-      // Sign in the user with the provided information including user type
-      signIn({
+      // Create user object with all details including user type
+      const userData = {
+        id: userId,
         firstName,
         lastName,
         email,
         userType
-      });
+      };
+      
+      // Save the user to our simulated storage
+      addUserToStorage(userData);
+      
+      // Sign in the user (this will save to localStorage)
+      await signIn(userData);
+      
+      // Save user type to Supabase
+      const { error } = await supabase
+        .from('user_types')
+        .insert({
+          id: userId,
+          user_type: userType
+        });
+        
+      if (error) {
+        console.error("Error saving user type:", error);
+        toast.error("There was an issue setting up your account");
+        return;
+      }
       
       toast.success(`Account created successfully as ${userType === "expert" ? "an expert" : "a user"}`);
       
@@ -48,7 +70,12 @@ const SignUpPage = () => {
       } else {
         navigate("/profile");
       }
-    }, 1000);
+    } catch (error) {
+      console.error("Error during signup:", error);
+      toast.error("Failed to create account");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

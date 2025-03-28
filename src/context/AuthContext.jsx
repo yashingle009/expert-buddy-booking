@@ -8,6 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isProfileComplete, setIsProfileComplete] = useState(false);
+  const [isLoadingUserType, setIsLoadingUserType] = useState(false);
 
   // Check local storage on initial load
   useEffect(() => {
@@ -23,15 +24,69 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // Fetch user type from Supabase when user changes
+  useEffect(() => {
+    const getUserTypeFromSupabase = async () => {
+      if (!user?.email) return;
+
+      try {
+        setIsLoadingUserType(true);
+        console.log("Fetching user type for:", user.email);
+        
+        // Using email as identifier since we don't have real auth.uid() yet
+        const { data, error } = await supabase
+          .from('user_types')
+          .select('user_type')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error("Error fetching user type:", error);
+          return;
+        }
+
+        if (data) {
+          console.log("User type from database:", data.user_type);
+          // Update user object with user type from database
+          const updatedUser = { 
+            ...user, 
+            userType: data.user_type 
+          };
+          setUser(updatedUser);
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+        }
+      } catch (error) {
+        console.error("Error in getUserTypeFromSupabase:", error);
+      } finally {
+        setIsLoadingUserType(false);
+      }
+    };
+
+    if (user?.id) {
+      getUserTypeFromSupabase();
+    }
+  }, [user?.id]);
+
   // Sign in function
-  const signIn = (userData) => {
-    setUser(userData);
-    setIsAuthenticated(true);
-    localStorage.setItem("user", JSON.stringify(userData));
-    // Check if profile is complete
-    setIsProfileComplete(
-      !!(userData.phone || userData.location || userData.bio)
-    );
+  const signIn = async (userData) => {
+    try {
+      console.log("Signing in with user data:", userData);
+      
+      // First, save basic user information
+      setUser(userData);
+      setIsAuthenticated(true);
+      localStorage.setItem("user", JSON.stringify(userData));
+      
+      // Check if profile is complete
+      setIsProfileComplete(
+        !!(userData.phone || userData.location || userData.bio)
+      );
+      
+      return userData;
+    } catch (error) {
+      console.error("Error in signIn:", error);
+      throw error;
+    }
   };
 
   // Sign out function
@@ -111,7 +166,8 @@ export const AuthProvider = ({ children }) => {
         signOut, 
         updateProfile,
         uploadProfileImage,
-        isExpert: user?.userType === "expert"
+        isExpert: user?.userType === "expert",
+        isLoadingUserType
       }}
     >
       {children}
