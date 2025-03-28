@@ -53,12 +53,20 @@ export const AuthProvider = ({ children }) => {
   // Upload and save profile image
   const uploadProfileImage = async (file) => {
     try {
-      if (!user || !file) return null;
+      if (!user || !file) {
+        console.error("Missing user or file for upload");
+        return null;
+      }
+      
+      // Log for debugging
+      console.log("Starting profile image upload for user:", user.id);
       
       // Create a unique file name
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const filePath = `${fileName}`;
+      
+      console.log("Uploading to path:", filePath, "in bucket: profileimages");
 
       // Upload the file to Supabase storage
       const { data, error } = await supabase.storage
@@ -70,7 +78,7 @@ export const AuthProvider = ({ children }) => {
 
       if (error) {
         console.error("Error uploading image:", error);
-        return null;
+        throw error;
       }
 
       // Get the public URL for the uploaded file
@@ -79,6 +87,7 @@ export const AuthProvider = ({ children }) => {
         .getPublicUrl(filePath);
 
       const imageUrl = publicURLData.publicUrl;
+      console.log("Image uploaded successfully. URL:", imageUrl);
 
       // Update the user's profile with the new image URL
       const updatedUser = { ...user, avatarUrl: imageUrl };
@@ -88,7 +97,7 @@ export const AuthProvider = ({ children }) => {
       return imageUrl;
     } catch (error) {
       console.error("Error in uploadProfileImage:", error);
-      return null;
+      throw error;
     }
   };
 
