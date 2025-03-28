@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "@/components/ThemeProvider";
+import { useUser, SignOutButton } from "@clerk/clerk-react";
 import { 
   Home, 
   Grid3x3, 
@@ -14,14 +15,17 @@ import {
   Bell, 
   HelpCircle, 
   Moon, 
-  Sun
+  Sun,
+  LogIn
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Layout = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
+  const { isSignedIn, user } = useUser();
 
   const toggleDrawer = () => {
     setIsDrawerOpen(!isDrawerOpen);
@@ -42,7 +46,6 @@ const Layout = () => {
     { name: "Account Settings", icon: <Settings size={24} /> },
     { name: "Notifications", icon: <Bell size={24} /> },
     { name: "Help Center", icon: <HelpCircle size={24} /> },
-    { name: "Logout", icon: <LogOut size={24} /> },
   ];
 
   // Check if the current path is an expert profile page
@@ -72,9 +75,25 @@ const Layout = () => {
             >
               {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
             </button>
-            <div className="h-8 w-8 bg-booking-secondary text-white rounded-full flex items-center justify-center">
-              <span className="font-medium text-sm">EB</span>
-            </div>
+            
+            {isSignedIn ? (
+              <div 
+                className="h-8 w-8 bg-booking-secondary text-white rounded-full flex items-center justify-center cursor-pointer"
+                onClick={() => navigate('/profile')}
+              >
+                {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0) || ''}
+              </div>
+            ) : (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate('/sign-in')}
+                className="flex items-center space-x-1"
+              >
+                <LogIn size={16} />
+                <span>Sign In</span>
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -134,17 +153,28 @@ const Layout = () => {
           </div>
           
           <div className="flex-1 overflow-auto py-4">
-            <div className="px-4 mb-6">
-              <div className="flex items-center space-x-3">
-                <div className="h-12 w-12 bg-booking-secondary text-white rounded-full flex items-center justify-center">
-                  <span className="font-medium">EB</span>
-                </div>
-                <div>
-                  <h3 className="font-medium">John Doe</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">john.doe@example.com</p>
+            {isSignedIn ? (
+              <div className="px-4 mb-6">
+                <div className="flex items-center space-x-3">
+                  <div className="h-12 w-12 bg-booking-secondary text-white rounded-full flex items-center justify-center">
+                    <span className="font-medium">{user?.firstName?.charAt(0)}{user?.lastName?.charAt(0) || ''}</span>
+                  </div>
+                  <div>
+                    <h3 className="font-medium">{user?.firstName} {user?.lastName}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{user?.primaryEmailAddress?.emailAddress}</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="px-4 mb-6 flex flex-col space-y-2">
+                <Button onClick={() => { toggleDrawer(); navigate('/sign-in'); }}>
+                  Sign In
+                </Button>
+                <Button variant="outline" onClick={() => { toggleDrawer(); navigate('/sign-up'); }}>
+                  Create Account
+                </Button>
+              </div>
+            )}
 
             <div className="space-y-1 px-3">
               {drawerItems.map((item) => (
@@ -157,6 +187,17 @@ const Layout = () => {
                   <span>{item.name}</span>
                 </button>
               ))}
+              
+              {isSignedIn && (
+                <SignOutButton>
+                  <button
+                    className="flex items-center space-x-3 w-full p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-red-500"
+                  >
+                    <LogOut size={24} />
+                    <span>Logout</span>
+                  </button>
+                </SignOutButton>
+              )}
               
               <div className="mt-4 px-3 py-3 flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center space-x-3">
