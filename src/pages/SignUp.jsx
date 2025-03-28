@@ -45,8 +45,7 @@ const SignUpPage = () => {
       // Save the user to our simulated storage
       addUserToStorage(userData);
       
-      // Sign in the user (this will save to localStorage)
-      await signIn(userData);
+      console.log("Saving user type to Supabase:", userType, "for user ID:", userId);
       
       // Save user type to Supabase
       const { error } = await supabase
@@ -61,6 +60,11 @@ const SignUpPage = () => {
         toast.error("There was an issue setting up your account");
         return;
       }
+      
+      console.log("User type saved successfully to Supabase");
+      
+      // Sign in the user (this will save to localStorage)
+      await signIn(userData);
       
       toast.success(`Account created successfully as ${userType === "expert" ? "an expert" : "a user"}`);
       

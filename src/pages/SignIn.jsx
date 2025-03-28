@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Navigate, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,7 @@ const SignInPage = () => {
       }
       
       // Get user type from Supabase
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('user_types')
         .select('user_type')
         .eq('id', existingUser.id)
@@ -44,12 +45,24 @@ const SignInPage = () => {
       
       if (error) {
         console.error("Error fetching user type:", error);
-        // If no user type found, default to regular user
-        existingUser.userType = "user";
-      } else if (data) {
-        existingUser.userType = data.user_type;
+        // If we can't get the user type from Supabase, try a different approach
+        // This ensures compatibility with both previously created users and new ones
+        
+        // Try getting the user type directly from the existingUser object
+        if (existingUser.userType) {
+          data = { user_type: existingUser.userType };
+          console.log("Using user type from local storage:", existingUser.userType);
+        } else {
+          // Default to regular user if no type is found
+          data = { user_type: "user" };
+          console.log("No user type found, defaulting to 'user'");
+        }
+      } else {
         console.log("Retrieved user type from database:", data.user_type);
       }
+      
+      // Assign the user type (either from Supabase or fallback)
+      existingUser.userType = data.user_type;
       
       // Sign in the user (this will save to localStorage)
       await signIn(existingUser);
