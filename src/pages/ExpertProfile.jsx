@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
   ChevronLeft, 
@@ -17,16 +18,22 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 const ExpertProfile = () => {
   const { expertId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState("Today");
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
   const [selectedCommunicationType, setSelectedCommunicationType] = useState("video");
   const [selectedService, setSelectedService] = useState(null);
+  const [expertData, setExpertData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   
-  const expert = {
+  // Fallback expert data
+  const fallbackExpert = {
     id: expertId,
     name: "Dr. Sarah Mitchell",
     title: "Business Strategy Consultant",
@@ -106,6 +113,66 @@ const ExpertProfile = () => {
     ]
   };
 
+  // Fetch expert data
+  useEffect(() => {
+    const fetchExpertData = async () => {
+      try {
+        setIsLoading(true);
+        // In a real app, you would fetch expert data from your database
+        // For now, we're simulating a fetch with a timeout
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', expertId)
+          .single();
+          
+        if (error) {
+          console.error("Error fetching expert data:", error);
+          // Use fallback data
+          setTimeout(() => {
+            setExpertData(fallbackExpert);
+            setIsLoading(false);
+          }, 500);
+        } else if (data) {
+          console.log("Fetched expert data:", data);
+          // Transform the fetched data to match our expected format
+          const formattedData = {
+            id: data.id,
+            name: data.full_name || fallbackExpert.name,
+            title: data.title || fallbackExpert.title,
+            rating: data.rating || fallbackExpert.rating,
+            reviews: data.reviews || fallbackExpert.reviews,
+            image: data.avatar_url || fallbackExpert.image,
+            experience: data.experience || fallbackExpert.experience,
+            education: data.education || fallbackExpert.education,
+            about: data.bio || fallbackExpert.about,
+            stats: data.stats || fallbackExpert.stats,
+            services: data.services || fallbackExpert.services,
+            availability: data.availability || fallbackExpert.availability,
+            clientReviews: data.client_reviews || fallbackExpert.clientReviews
+          };
+          setExpertData(formattedData);
+          setIsLoading(false);
+        } else {
+          // No data found, use fallback
+          setTimeout(() => {
+            setExpertData(fallbackExpert);
+            setIsLoading(false);
+          }, 500);
+        }
+      } catch (error) {
+        console.error("Error in fetchExpertData:", error);
+        // Use fallback data
+        setTimeout(() => {
+          setExpertData(fallbackExpert);
+          setIsLoading(false);
+        }, 500);
+      }
+    };
+
+    fetchExpertData();
+  }, [expertId]);
+
   const handleDateSelect = (date) => {
     setSelectedDate(date);
     setSelectedTimeSlot(null);
@@ -125,7 +192,7 @@ const ExpertProfile = () => {
       return;
     }
     
-    toast.success(`Consultation booked with ${expert.name} for ${selectedDate} at ${selectedTimeSlot}`);
+    toast.success(`Consultation booked with ${expertData?.name} for ${selectedDate} at ${selectedTimeSlot}`);
     // In a real app, this would navigate to a booking confirmation page
   };
 
@@ -148,12 +215,32 @@ const ExpertProfile = () => {
       ));
   };
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-booking-secondary"></div>
+      </div>
+    );
+  }
+
+  // If no expertData, return error
+  if (!expertData) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen p-4">
+        <h2 className="text-2xl font-bold mb-4">Expert Not Found</h2>
+        <p className="text-center mb-8">We couldn't find the expert you're looking for.</p>
+        <Button onClick={() => navigate('/categories')}>Browse Experts</Button>
+      </div>
+    );
+  }
+
   return (
     <div className="pb-24 flex flex-col">
       <div 
         className="relative h-[340px] w-full bg-cover bg-center"
         style={{
-          backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.7)), url(${expert.image})`,
+          backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.7)), url(${expertData.image})`,
         }}
       >
         <div className="flex justify-between items-center p-4">
@@ -174,29 +261,33 @@ const ExpertProfile = () => {
         </div>
         
         <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
-          <h1 className="text-2xl font-bold">{expert.name}</h1>
-          <p className="text-white/90 mb-2">{expert.title}</p>
+          <h1 className="text-2xl font-bold">{expertData.name}</h1>
+          <p className="text-white/90 mb-2">{expertData.title}</p>
           
           <div className="flex items-center mb-2">
             <div className="flex mr-2">
-              {renderStars(expert.rating)}
+              {renderStars(expertData.rating)}
             </div>
-            <span className="text-sm">{expert.rating} ({expert.reviews} reviews)</span>
+            <span className="text-sm">{expertData.rating} ({expertData.reviews} reviews)</span>
           </div>
           
           <div className="flex flex-wrap gap-2 mt-2">
-            <Badge variant="outline" className="bg-white/20 text-white border-transparent">
-              {expert.experience}
-            </Badge>
-            <Badge variant="outline" className="bg-white/20 text-white border-transparent">
-              {expert.education}
-            </Badge>
+            {expertData.experience && (
+              <Badge variant="outline" className="bg-white/20 text-white border-transparent">
+                {expertData.experience}
+              </Badge>
+            )}
+            {expertData.education && (
+              <Badge variant="outline" className="bg-white/20 text-white border-transparent">
+                {expertData.education}
+              </Badge>
+            )}
           </div>
         </div>
       </div>
       
       <div className="grid grid-cols-3 divide-x divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900">
-        {expert.stats.map((stat, index) => (
+        {expertData.stats.map((stat, index) => (
           <div key={index} className="p-4 text-center">
             <div className="font-bold">{stat.value}</div>
             <div className="text-sm text-gray-600 dark:text-gray-400">{stat.label}</div>
@@ -207,7 +298,7 @@ const ExpertProfile = () => {
       <div className="px-5 py-4 bg-white dark:bg-gray-900">
         <h2 className="text-xl font-bold mb-3">About</h2>
         <p className="text-gray-700 dark:text-gray-300 text-sm">
-          {expert.about}
+          {expertData.about}
         </p>
       </div>
       
@@ -215,7 +306,7 @@ const ExpertProfile = () => {
         <h2 className="text-xl font-bold mb-3">Services</h2>
         <ScrollArea className="h-[150px] w-full">
           <div className="pr-4">
-            {expert.services.map((service) => (
+            {expertData.services.map((service) => (
               <Card 
                 key={service.id} 
                 className={`bg-white dark:bg-gray-900 border mb-3 shadow-sm transition-all duration-200 cursor-pointer ${
@@ -281,7 +372,7 @@ const ExpertProfile = () => {
         </div>
         
         <div className="grid grid-cols-6 gap-2 mb-4">
-          {expert.availability.dates.map((date, index) => (
+          {expertData.availability.dates.map((date, index) => (
             <div 
               key={index}
               className={`cursor-pointer rounded-lg text-center p-2 ${
@@ -303,7 +394,7 @@ const ExpertProfile = () => {
         </div>
         
         <div className="grid grid-cols-3 gap-2">
-          {expert.availability.timeSlots.map((slot, index) => (
+          {expertData.availability.timeSlots.map((slot, index) => (
             <div
               key={index}
               className={`cursor-pointer border rounded-lg py-2 px-3 text-center ${
@@ -319,30 +410,41 @@ const ExpertProfile = () => {
         </div>
       </div>
       
-      <div className="px-5 py-4 bg-gray-50 dark:bg-gray-800">
-        <h2 className="text-xl font-bold mb-3">Recent Reviews</h2>
-        <div className="space-y-3">
-          {expert.clientReviews.map((review) => (
-            <div key={review.id} className="bg-white dark:bg-gray-900 rounded-lg p-4">
-              <div className="flex items-center mb-2">
-                <Avatar className="h-10 w-10 mr-3">
-                  <AvatarImage src={review.avatar} alt={review.name} />
-                  <AvatarFallback>{review.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="font-medium">{review.name}</div>
-                  <div className="flex">
-                    {renderStars(review.rating)}
+      {expertData.clientReviews && expertData.clientReviews.length > 0 ? (
+        <div className="px-5 py-4 bg-gray-50 dark:bg-gray-800">
+          <h2 className="text-xl font-bold mb-3">Recent Reviews</h2>
+          <div className="space-y-3">
+            {expertData.clientReviews.map((review) => (
+              <div key={review.id} className="bg-white dark:bg-gray-900 rounded-lg p-4">
+                <div className="flex items-center mb-2">
+                  <Avatar className="h-10 w-10 mr-3">
+                    <AvatarImage src={review.avatar} alt={review.name} />
+                    <AvatarFallback>{review.name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="font-medium">{review.name}</div>
+                    <div className="flex">
+                      {renderStars(review.rating)}
+                    </div>
                   </div>
                 </div>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  {review.comment}
+                </p>
               </div>
-              <p className="text-sm text-gray-700 dark:text-gray-300">
-                {review.comment}
-              </p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="px-5 py-4 bg-gray-50 dark:bg-gray-800">
+          <h2 className="text-xl font-bold mb-3">No Reviews Yet</h2>
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-4 text-center">
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              This expert doesn't have any reviews yet. Be the first to book a session!
+            </p>
+          </div>
+        </div>
+      )}
       
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
         <Button 
