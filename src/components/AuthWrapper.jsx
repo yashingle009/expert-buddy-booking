@@ -1,12 +1,10 @@
 
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
-// This is a placeholder authentication wrapper until you implement a new auth system
 const AuthWrapper = ({ children }) => {
-  // For now, we'll assume the user is authenticated
-  // You'll need to replace this with actual authentication logic later
-  const isAuthenticated = true;
+  const { isAuthenticated } = useAuth();
 
   if (!isAuthenticated) {
     toast.error("Please sign in to access this page");

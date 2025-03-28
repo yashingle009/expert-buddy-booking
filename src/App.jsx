@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { AuthProvider } from "@/context/AuthContext";
 import Layout from "@/components/Layout";
 import Index from "./pages/Index";
 import Categories from "./pages/Categories";
@@ -22,42 +23,44 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light" storageKey="expert-buddy-theme">
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Layout />}>
-                <Route index element={<Index />} />
-                <Route path="/categories" element={<Categories />} />
-                <Route path="/categories/:categoryId" element={<Categories />} />
-                <Route path="/expert/:expertId" element={<ExpertProfile />} />
-              </Route>
-              
-              {/* Auth Routes */}
-              <Route path="/sign-in" element={<SignIn />} />
-              <Route path="/sign-up" element={<SignUp />} />
-              
-              {/* Protected Routes */}
-              <Route path="/" element={<Layout />}>
-                <Route path="/bookings" element={
-                  <AuthWrapper>
-                    <Bookings />
-                  </AuthWrapper>
-                } />
-                <Route path="/profile" element={
-                  <AuthWrapper>
-                    <Profile />
-                  </AuthWrapper>
-                } />
-              </Route>
-              
-              {/* Catch All */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<Layout />}>
+                  <Route index element={<Index />} />
+                  <Route path="/categories" element={<Categories />} />
+                  <Route path="/categories/:categoryId" element={<Categories />} />
+                  <Route path="/expert/:expertId" element={<ExpertProfile />} />
+                </Route>
+                
+                {/* Auth Routes */}
+                <Route path="/sign-in" element={<SignIn />} />
+                <Route path="/sign-up" element={<SignUp />} />
+                
+                {/* Protected Routes */}
+                <Route path="/" element={<Layout />}>
+                  <Route path="/bookings" element={
+                    <AuthWrapper>
+                      <Bookings />
+                    </AuthWrapper>
+                  } />
+                  <Route path="/profile" element={
+                    <AuthWrapper>
+                      <Profile />
+                    </AuthWrapper>
+                  } />
+                </Route>
+                
+                {/* Catch All */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

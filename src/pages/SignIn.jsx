@@ -4,18 +4,17 @@ import { Navigate, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 const SignInPage = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  
-  // This is a placeholder for authentication state
-  const isSignedIn = false; // Replace with actual auth state later
 
   // If user is already signed in, redirect to profile
-  if (isSignedIn) {
+  if (isAuthenticated) {
     return <Navigate to="/profile" replace />;
   }
 
@@ -27,7 +26,18 @@ const SignInPage = () => {
     // Simulate sign-in with a timeout
     setTimeout(() => {
       setIsLoading(false);
-      // For demo purposes, let's simulate a successful login
+      
+      // Create user object with email and a generated name from email
+      const firstName = email.split('@')[0].split('.')[0];
+      const lastName = email.split('@')[0].split('.')[1] || '';
+      
+      // Sign in the user
+      signIn({
+        firstName: firstName.charAt(0).toUpperCase() + firstName.slice(1),
+        lastName: lastName ? lastName.charAt(0).toUpperCase() + lastName.slice(1) : '',
+        email: email
+      });
+      
       toast.success("Signed in successfully");
       navigate("/profile");
     }, 1000);

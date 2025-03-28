@@ -14,19 +14,14 @@ import {
   Camera,
   Edit
 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   
-  // Mock user data
-  const user = {
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phone: "+1 (555) 123-4567",
-    image: null,
-  };
-
-  const [profileImage, setProfileImage] = useState(user.image);
+  const [profileImage, setProfileImage] = useState(null);
 
   // Handle profile image upload
   const handleImageChange = (event) => {
@@ -38,6 +33,12 @@ const Profile = () => {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleLogout = () => {
+    signOut();
+    toast.success("Logged out successfully");
+    navigate("/sign-in");
   };
 
   return (
@@ -76,8 +77,12 @@ const Profile = () => {
               </label>
             </div>
           </div>
-          <h2 className="text-xl font-bold">{user.name}</h2>
-          <p className="text-gray-600 dark:text-gray-400">{user.email}</p>
+          <h2 className="text-xl font-bold">
+            {user ? `${user.firstName} ${user.lastName}` : "Guest User"}
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            {user ? user.email : "guest@example.com"}
+          </p>
           <button className="mt-4 btn-secondary py-2 px-4 flex items-center">
             <Edit size={16} className="mr-2" />
             Edit Profile
@@ -167,7 +172,10 @@ const Profile = () => {
         </div>
         
         {/* Logout */}
-        <button className="w-full neo-card p-4 flex items-center justify-center text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+        <button 
+          className="w-full neo-card p-4 flex items-center justify-center text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          onClick={handleLogout}
+        >
           <LogOut size={20} className="mr-2" />
           <span className="font-medium">Log Out</span>
         </button>

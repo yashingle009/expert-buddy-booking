@@ -4,20 +4,19 @@ import { Navigate, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 const SignUpPage = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, signIn } = useAuth();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  
-  // This is a placeholder for authentication state
-  const isSignedIn = false; // Replace with actual auth state later
 
   // If user is already signed in, redirect to profile
-  if (isSignedIn) {
+  if (isAuthenticated) {
     return <Navigate to="/profile" replace />;
   }
 
@@ -29,7 +28,14 @@ const SignUpPage = () => {
     // Simulate sign-up with a timeout
     setTimeout(() => {
       setIsLoading(false);
-      // For demo purposes, let's simulate a successful registration
+      
+      // Sign in the user with the provided information
+      signIn({
+        firstName,
+        lastName,
+        email
+      });
+      
       toast.success("Account created successfully");
       navigate("/profile");
     }, 1000);

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "@/components/ThemeProvider";
+import { useAuth } from "@/context/AuthContext";
 import { 
   Home, 
   Grid3x3, 
@@ -24,11 +25,8 @@ const Layout = () => {
   const { theme, setTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, isAuthenticated, signOut } = useAuth();
   
-  // Placeholder for authentication state
-  const isSignedIn = true; // Replace with your auth logic later
-  const user = { firstName: "John", lastName: "Doe", primaryEmailAddress: { emailAddress: "john@example.com" } };
-
   const toggleDrawer = () => {
     setIsDrawerOpen(!isDrawerOpen);
   };
@@ -54,7 +52,7 @@ const Layout = () => {
   const isExpertProfilePage = location.pathname.startsWith('/expert/');
 
   const handleLogout = () => {
-    // Add your logout logic here later
+    signOut();
     navigate('/');
   };
 
@@ -83,7 +81,7 @@ const Layout = () => {
               {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
             </button>
             
-            {isSignedIn ? (
+            {isAuthenticated ? (
               <div 
                 className="h-8 w-8 bg-booking-secondary text-white rounded-full flex items-center justify-center cursor-pointer"
                 onClick={() => navigate('/profile')}
@@ -160,7 +158,7 @@ const Layout = () => {
           </div>
           
           <div className="flex-1 overflow-auto py-4">
-            {isSignedIn ? (
+            {isAuthenticated ? (
               <div className="px-4 mb-6">
                 <div className="flex items-center space-x-3">
                   <div className="h-12 w-12 bg-booking-secondary text-white rounded-full flex items-center justify-center">
@@ -168,7 +166,7 @@ const Layout = () => {
                   </div>
                   <div>
                     <h3 className="font-medium">{user?.firstName} {user?.lastName}</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{user?.primaryEmailAddress?.emailAddress}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</p>
                   </div>
                 </div>
               </div>
@@ -195,7 +193,7 @@ const Layout = () => {
                 </button>
               ))}
               
-              {isSignedIn && (
+              {isAuthenticated && (
                 <button
                   onClick={handleLogout}
                   className="flex items-center space-x-3 w-full p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-red-500"
