@@ -36,32 +36,34 @@ const SignInPage = () => {
         return;
       }
       
-      // Get user type from Supabase
+      console.log("Found user in storage:", existingUser);
+      
+      // Try to get user type from Supabase
       let { data, error } = await supabase
         .from('user_types')
         .select('user_type')
         .eq('id', existingUser.id)
-        .single();
+        .maybeSingle();
       
       if (error) {
-        console.error("Error fetching user type:", error);
-        // If we can't get the user type from Supabase, try a different approach
-        // This ensures compatibility with both previously created users and new ones
+        console.error("Error fetching user type from Supabase:", error);
         
-        // Try getting the user type directly from the existingUser object
+        // Try getting user type from local storage
         if (existingUser.userType) {
           data = { user_type: existingUser.userType };
           console.log("Using user type from local storage:", existingUser.userType);
         } else {
-          // Default to regular user if no type is found
           data = { user_type: "user" };
           console.log("No user type found, defaulting to 'user'");
         }
+      } else if (data) {
+        console.log("Retrieved user type from Supabase:", data.user_type);
       } else {
-        console.log("Retrieved user type from database:", data.user_type);
+        console.log("No user type found in Supabase, using default 'user'");
+        data = { user_type: "user" };
       }
       
-      // Assign the user type (either from Supabase or fallback)
+      // Assign the user type
       existingUser.userType = data.user_type;
       
       // Sign in the user (this will save to localStorage)

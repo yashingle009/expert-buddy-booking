@@ -58,6 +58,7 @@ const SignUpPage = () => {
       if (error) {
         console.error("Error saving user type:", error);
         toast.error("There was an issue setting up your account");
+        setIsLoading(false);
         return;
       }
       
