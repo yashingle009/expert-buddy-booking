@@ -19,19 +19,37 @@ import { toast } from "sonner";
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, uploadProfileImage } = useAuth();
   
-  const [profileImage, setProfileImage] = useState(null);
-
+  const [isUploading, setIsUploading] = useState(false);
+  
   // Handle profile image upload
-  const handleImageChange = (event) => {
+  const handleImageChange = async (event) => {
     const file = event.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setProfileImage(e.target.result);
-      };
-      reader.readAsDataURL(file);
+      setIsUploading(true);
+      try {
+        // Show preview of the image immediately
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          // This just shows a preview but doesn't save it yet
+        };
+        reader.readAsDataURL(file);
+        
+        // Upload image to storage and update user profile
+        const imageUrl = await uploadProfileImage(file);
+        
+        if (imageUrl) {
+          toast.success("Profile image updated successfully");
+        } else {
+          toast.error("Failed to update profile image");
+        }
+      } catch (error) {
+        console.error("Error updating profile image:", error);
+        toast.error("Error updating profile image");
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -53,9 +71,9 @@ const Profile = () => {
       <section className="mb-8">
         <div className="neo-card p-6 flex flex-col items-center">
           <div className="relative group mb-4">
-            {profileImage ? (
+            {user?.avatarUrl ? (
               <img 
-                src={profileImage} 
+                src={user.avatarUrl} 
                 alt="Profile" 
                 className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-gray-800 shadow-md"
               />
@@ -73,6 +91,7 @@ const Profile = () => {
                   accept="image/*" 
                   className="hidden" 
                   onChange={handleImageChange} 
+                  disabled={isUploading}
                 />
               </label>
             </div>

@@ -1,5 +1,6 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const AuthContext = createContext(null);
 
@@ -49,6 +50,48 @@ export const AuthProvider = ({ children }) => {
     setIsProfileComplete(true);
   };
 
+  // Upload and save profile image
+  const uploadProfileImage = async (file) => {
+    try {
+      if (!user || !file) return null;
+      
+      // Create a unique file name
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      // Upload the file to Supabase storage
+      const { data, error } = await supabase.storage
+        .from('profileimages')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (error) {
+        console.error("Error uploading image:", error);
+        return null;
+      }
+
+      // Get the public URL for the uploaded file
+      const { data: publicURLData } = supabase.storage
+        .from('profileimages')
+        .getPublicUrl(filePath);
+
+      const imageUrl = publicURLData.publicUrl;
+
+      // Update the user's profile with the new image URL
+      const updatedUser = { ...user, avatarUrl: imageUrl };
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      
+      return imageUrl;
+    } catch (error) {
+      console.error("Error in uploadProfileImage:", error);
+      return null;
+    }
+  };
+
   return (
     <AuthContext.Provider 
       value={{ 
@@ -57,7 +100,8 @@ export const AuthProvider = ({ children }) => {
         isProfileComplete, 
         signIn, 
         signOut, 
-        updateProfile 
+        updateProfile,
+        uploadProfileImage
       }}
     >
       {children}
