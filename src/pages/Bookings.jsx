@@ -1,6 +1,7 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 import { 
   Calendar, 
   Clock, 
@@ -11,7 +12,8 @@ import {
   AlertCircle,
   ChevronRight,
   ArrowLeft,
-  Info
+  Info,
+  Loader
 } from "lucide-react";
 import { 
   Tabs, 
@@ -31,88 +33,202 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
 
 const Bookings = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [selectedBooking, setSelectedBooking] = useState(null);
-  
-  // Mock data
-  const bookings = {
-    upcoming: [
-      {
-        id: "1",
-        expertName: "Dr. Sarah Johnson",
-        specialty: "Tax Consultant",
-        date: "June 12, 2023",
-        time: "2:30 PM",
-        duration: "45 minutes",
-        location: "Virtual",
-        status: "confirmed",
-        price: "$120",
-        notes: "Please prepare your last year's tax documents for the session.",
-        image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
-      },
-      {
-        id: "2",
-        expertName: "Mark Williams",
-        specialty: "Business Advisor",
-        date: "June 18, 2023",
-        time: "10:00 AM",
-        duration: "60 minutes",
-        location: "Virtual",
-        status: "pending",
-        price: "$150",
-        notes: "Discussion about expanding your business to international markets.",
-        image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
-      },
-    ],
-    past: [
-      {
-        id: "3",
-        expertName: "Rebecca Chen",
-        specialty: "Immigration Lawyer",
-        date: "May 28, 2023",
-        time: "1:00 PM",
-        duration: "90 minutes",
-        location: "Virtual",
-        status: "completed",
-        price: "$200",
-        notes: "Visa application review and next steps discussion.",
-        rating: 5,
-        review: "Rebecca was extremely helpful and knowledgeable about the visa process. She answered all my questions clearly and provided excellent guidance.",
-        image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
-      },
-      {
-        id: "4",
-        expertName: "James Peterson",
-        specialty: "Financial Advisor",
-        date: "May 20, 2023",
-        time: "11:30 AM",
-        duration: "60 minutes",
-        location: "Virtual",
-        status: "completed",
-        price: "$175",
-        notes: "Retirement planning session. Please bring current investment portfolio details.",
-        rating: 4,
-        review: "James provided great advice tailored to my financial situation. I feel more confident about my retirement plan now.",
-        image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
-      },
-      {
-        id: "5",
-        expertName: "Emily Rodriguez",
-        specialty: "Estate Planning Attorney",
-        date: "May 15, 2023",
-        time: "3:00 PM",
-        duration: "45 minutes",
-        location: "Virtual",
-        status: "cancelled",
-        price: "$150",
-        cancellationReason: "Expert unavailable due to emergency",
-        refundStatus: "Processed on May 16, 2023",
-        image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
-      },
-    ],
-  };
+  const [bookings, setBookings] = useState({
+    upcoming: [],
+    past: []
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      if (!user?.id) return;
+      
+      setIsLoading(true);
+      try {
+        const currentDate = new Date().toISOString();
+        
+        const { data: upcomingData, error: upcomingError } = await supabase
+          .from('bookings')
+          .select(`
+            id,
+            expert_id,
+            client_id,
+            client_name,
+            expert_name,
+            expert_specialty,
+            date,
+            time,
+            duration,
+            status,
+            location,
+            price,
+            notes,
+            service_type,
+            created_at,
+            expert_image
+          `)
+          .eq('client_id', user.id)
+          .gte('date', currentDate)
+          .order('date', { ascending: true });
+        
+        const { data: pastData, error: pastError } = await supabase
+          .from('bookings')
+          .select(`
+            id,
+            expert_id,
+            client_id,
+            client_name,
+            expert_name,
+            expert_specialty,
+            date,
+            time,
+            duration,
+            status,
+            location,
+            price,
+            notes,
+            service_type,
+            created_at,
+            expert_image,
+            rating,
+            review,
+            cancellation_reason,
+            refund_status
+          `)
+          .eq('client_id', user.id)
+          .lt('date', currentDate)
+          .order('date', { ascending: false });
+        
+        if (upcomingError || pastError) {
+          console.error("Error fetching bookings:", upcomingError || pastError);
+          toast.error("Failed to load your bookings");
+          
+          setBookings({
+            upcoming: [
+              {
+                id: "1",
+                expertName: "Dr. Sarah Johnson",
+                specialty: "Tax Consultant",
+                date: "June 12, 2023",
+                time: "2:30 PM",
+                duration: 60,
+                location: "Virtual",
+                status: "confirmed",
+                price: "$120",
+                notes: "Please prepare your last year's tax documents for the session.",
+                image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
+              },
+              {
+                id: "2",
+                expertName: "Mark Williams",
+                specialty: "Business Advisor",
+                date: "June 18, 2023",
+                time: "10:00 AM",
+                duration: 30,
+                location: "Virtual",
+                status: "pending",
+                price: "$150",
+                notes: "Discussion about expanding your business to international markets.",
+                image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
+              },
+            ],
+            past: [
+              {
+                id: "3",
+                expertName: "Rebecca Chen",
+                specialty: "Immigration Lawyer",
+                date: "May 28, 2023",
+                time: "1:00 PM",
+                duration: 90,
+                location: "Virtual",
+                status: "completed",
+                price: "$200",
+                notes: "Visa application review and next steps discussion.",
+                rating: 5,
+                review: "Rebecca was extremely helpful and knowledgeable about the visa process. She answered all my questions clearly and provided excellent guidance.",
+                image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
+              },
+              {
+                id: "4",
+                expertName: "James Peterson",
+                specialty: "Financial Advisor",
+                date: "May 20, 2023",
+                time: "11:30 AM",
+                duration: 60,
+                location: "Virtual",
+                status: "completed",
+                price: "$175",
+                notes: "Retirement planning session. Please bring current investment portfolio details.",
+                rating: 4,
+                review: "James provided great advice tailored to my financial situation. I feel more confident about my retirement plan now.",
+                image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
+              },
+              {
+                id: "5",
+                expertName: "Emily Rodriguez",
+                specialty: "Estate Planning Attorney",
+                date: "May 15, 2023",
+                time: "3:00 PM",
+                duration: 45,
+                location: "Virtual",
+                status: "cancelled",
+                price: "$150",
+                cancellationReason: "Expert unavailable due to emergency",
+                refundStatus: "Processed on May 16, 2023",
+                image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
+              },
+            ]
+          });
+        } else {
+          const formatBookings = (bookingsData) => {
+            return bookingsData?.map(booking => ({
+              id: booking.id,
+              expertName: booking.expert_name || "Expert",
+              specialty: booking.expert_specialty || "Consultant",
+              date: new Date(booking.date).toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric'
+              }),
+              time: booking.time || "12:00 PM",
+              duration: booking.duration || 60,
+              location: booking.location || "Virtual",
+              status: booking.status || "pending",
+              price: booking.price ? `$${booking.price}` : "$0",
+              notes: booking.notes || "",
+              image: booking.expert_image || "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
+              rating: booking.rating,
+              review: booking.review,
+              cancellationReason: booking.cancellation_reason,
+              refundStatus: booking.refund_status,
+              expertId: booking.expert_id
+            })) || [];
+          };
+          
+          setBookings({
+            upcoming: formatBookings(upcomingData),
+            past: formatBookings(pastData)
+          });
+        }
+      } catch (error) {
+        console.error("Error in fetchBookings:", error);
+        toast.error("Failed to load bookings data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (user?.id) {
+      fetchBookings();
+    }
+  }, [user?.id]);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -176,15 +292,83 @@ const Bookings = () => {
     );
   };
 
+  const handleCancelBooking = async (bookingId) => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ 
+          status: 'cancelled',
+          cancellation_reason: 'Cancelled by client'
+        })
+        .eq('id', bookingId);
+      
+      if (error) {
+        console.error("Error cancelling booking:", error);
+        toast.error("Failed to cancel booking");
+        return;
+      }
+      
+      toast.success("Booking cancelled successfully");
+      
+      setBookings(prev => {
+        const updatedUpcoming = prev.upcoming.map(booking => 
+          booking.id === bookingId 
+            ? {...booking, status: 'cancelled', cancellationReason: 'Cancelled by client'} 
+            : booking
+        );
+        
+        return {
+          ...prev,
+          upcoming: updatedUpcoming
+        };
+      });
+    } catch (error) {
+      console.error("Error in handleCancelBooking:", error);
+      toast.error("An error occurred while cancelling the booking");
+    }
+  };
+
+  const handleLeaveReview = (bookingId) => {
+    toast.info("Review functionality will be implemented soon");
+  };
+
+  const LoadingBookingCard = () => (
+    <Card className="overflow-hidden">
+      <div className="flex">
+        <div className="w-1/4 sm:w-1/5">
+          <Skeleton className="h-full" />
+        </div>
+        <CardContent className="w-3/4 sm:w-4/5 p-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <Skeleton className="h-5 w-32 mb-2" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+            <Skeleton className="h-5 w-24" />
+          </div>
+          
+          <div className="mt-3 space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+          
+          <div className="mt-4 flex items-center justify-between">
+            <Skeleton className="h-5 w-16" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+        </CardContent>
+      </div>
+    </Card>
+  );
+
   return (
     <div className="page-container animate-fade-in pb-20">
-      {/* Header */}
       <section className="mb-6">
         <h1 className="text-3xl font-bold mb-2">My Bookings</h1>
         <p className="text-gray-600 dark:text-gray-400">Manage your appointments with experts</p>
       </section>
 
-      {/* Tabs */}
       <Tabs defaultValue="upcoming" className="w-full">
         <TabsList className="w-full grid grid-cols-2 mb-6">
           <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
@@ -192,55 +376,65 @@ const Bookings = () => {
         </TabsList>
         
         <TabsContent value="upcoming" className="space-y-4">
-          {bookings.upcoming.length > 0 ? (
+          {isLoading ? (
+            Array(2).fill(0).map((_, index) => (
+              <LoadingBookingCard key={`loading-upcoming-${index}`} />
+            ))
+          ) : bookings.upcoming.length > 0 ? (
             bookings.upcoming.map((booking) => (
               <Dialog key={booking.id}>
-                <Card 
-                  className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => handleBookingClick(booking)}
-                >
-                  <div className="flex">
-                    <div className="w-1/4 sm:w-1/5">
-                      <img 
-                        src={booking.image} 
-                        alt={booking.expertName} 
-                        className="w-full h-full object-cover"
-                      />
+                <DialogTrigger asChild>
+                  <Card 
+                    className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => handleBookingClick(booking)}
+                  >
+                    <div className="flex">
+                      <div className="w-1/4 sm:w-1/5">
+                        <img 
+                          src={booking.image} 
+                          alt={booking.expertName}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "https://via.placeholder.com/150?text=Expert";
+                          }}
+                        />
+                      </div>
+                      <CardContent className="w-3/4 sm:w-4/5 p-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-bold">{booking.expertName}</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{booking.specialty}</p>
+                          </div>
+                          {getStatusBadge(booking.status)}
+                        </div>
+                        
+                        <div className="mt-3 space-y-2">
+                          <div className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                            <Calendar size={16} className="mr-2 text-gray-500 dark:text-gray-400" />
+                            {booking.date}
+                          </div>
+                          <div className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                            <Clock size={16} className="mr-2 text-gray-500 dark:text-gray-400" />
+                            {booking.time} ({booking.duration} min)
+                          </div>
+                          <div className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                            <MapPin size={16} className="mr-2 text-gray-500 dark:text-gray-400" />
+                            {booking.location}
+                          </div>
+                        </div>
+                        
+                        <div className="mt-4 flex items-center justify-between">
+                          <span className="font-medium">{booking.price}</span>
+                          <div className="flex items-center text-booking-secondary">
+                            <span className="text-sm font-medium mr-1">View Details</span>
+                            <ChevronRight size={16} />
+                          </div>
+                        </div>
+                      </CardContent>
                     </div>
-                    <CardContent className="w-3/4 sm:w-4/5 p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-bold">{booking.expertName}</h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{booking.specialty}</p>
-                        </div>
-                        {getStatusBadge(booking.status)}
-                      </div>
-                      
-                      <div className="mt-3 space-y-2">
-                        <div className="flex items-center text-sm text-gray-700 dark:text-gray-300">
-                          <Calendar size={16} className="mr-2 text-gray-500 dark:text-gray-400" />
-                          {booking.date}
-                        </div>
-                        <div className="flex items-center text-sm text-gray-700 dark:text-gray-300">
-                          <Clock size={16} className="mr-2 text-gray-500 dark:text-gray-400" />
-                          {booking.time} ({booking.duration})
-                        </div>
-                        <div className="flex items-center text-sm text-gray-700 dark:text-gray-300">
-                          <MapPin size={16} className="mr-2 text-gray-500 dark:text-gray-400" />
-                          {booking.location}
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4 flex items-center justify-between">
-                        <span className="font-medium">{booking.price}</span>
-                        <div className="flex items-center text-booking-secondary">
-                          <span className="text-sm font-medium mr-1">View Details</span>
-                          <ChevronRight size={16} />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </div>
-                </Card>
+                  </Card>
+                </DialogTrigger>
                 
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
@@ -256,6 +450,10 @@ const Bookings = () => {
                         src={booking.image} 
                         alt={booking.expertName} 
                         className="w-16 h-16 rounded-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "https://via.placeholder.com/150?text=Expert";
+                        }}
                       />
                       <div>
                         <h3 className="font-bold">{booking.expertName}</h3>
@@ -278,7 +476,7 @@ const Bookings = () => {
                       
                       <div className="flex justify-between">
                         <span className="text-gray-600 dark:text-gray-400">Duration:</span>
-                        <span>{booking.duration}</span>
+                        <span>{booking.duration} min</span>
                       </div>
                       
                       <div className="flex justify-between">
@@ -307,7 +505,10 @@ const Bookings = () => {
                     
                     <div className="flex space-x-2">
                       {booking.status === "confirmed" && (
-                        <Button variant="destructive">Cancel</Button>
+                        <Button variant="destructive" 
+                          onClick={() => handleCancelBooking(booking.id)}>
+                          Cancel
+                        </Button>
                       )}
                       
                       {booking.status === "confirmed" && (
@@ -337,60 +538,70 @@ const Bookings = () => {
         </TabsContent>
         
         <TabsContent value="past" className="space-y-4">
-          {bookings.past.length > 0 ? (
+          {isLoading ? (
+            Array(2).fill(0).map((_, index) => (
+              <LoadingBookingCard key={`loading-past-${index}`} />
+            ))
+          ) : bookings.past.length > 0 ? (
             bookings.past.map((booking) => (
               <Dialog key={booking.id}>
-                <Card 
-                  className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => handleBookingClick(booking)}
-                >
-                  <div className="flex">
-                    <div className="w-1/4 sm:w-1/5">
-                      <img 
-                        src={booking.image} 
-                        alt={booking.expertName} 
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <CardContent className="w-3/4 sm:w-4/5 p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-bold">{booking.expertName}</h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{booking.specialty}</p>
-                        </div>
-                        {getStatusBadge(booking.status)}
+                <DialogTrigger asChild>
+                  <Card 
+                    className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => handleBookingClick(booking)}
+                  >
+                    <div className="flex">
+                      <div className="w-1/4 sm:w-1/5">
+                        <img 
+                          src={booking.image} 
+                          alt={booking.expertName} 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "https://via.placeholder.com/150?text=Expert";
+                          }}
+                        />
                       </div>
-                      
-                      <div className="mt-3 space-y-2">
-                        <div className="flex items-center text-sm text-gray-700 dark:text-gray-300">
-                          <Calendar size={16} className="mr-2 text-gray-500 dark:text-gray-400" />
-                          {booking.date}
+                      <CardContent className="w-3/4 sm:w-4/5 p-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-bold">{booking.expertName}</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{booking.specialty}</p>
+                          </div>
+                          {getStatusBadge(booking.status)}
                         </div>
-                        <div className="flex items-center text-sm text-gray-700 dark:text-gray-300">
-                          <Clock size={16} className="mr-2 text-gray-500 dark:text-gray-400" />
-                          {booking.time} ({booking.duration})
-                        </div>
-                      </div>
-                      
-                      {booking.status === "completed" && (
-                        <div className="mt-2">
-                          <div className="flex items-center">
-                            <span className="text-sm mr-2">Your Rating:</span>
-                            {renderStars(booking.rating)}
+                        
+                        <div className="mt-3 space-y-2">
+                          <div className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                            <Calendar size={16} className="mr-2 text-gray-500 dark:text-gray-400" />
+                            {booking.date}
+                          </div>
+                          <div className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                            <Clock size={16} className="mr-2 text-gray-500 dark:text-gray-400" />
+                            {booking.time} ({booking.duration} min)
                           </div>
                         </div>
-                      )}
-                      
-                      <div className="mt-4 flex items-center justify-between">
-                        <span className="font-medium">{booking.price}</span>
-                        <div className="flex items-center text-booking-secondary">
-                          <span className="text-sm font-medium mr-1">View Details</span>
-                          <ChevronRight size={16} />
+                        
+                        {booking.status === "completed" && booking.rating && (
+                          <div className="mt-2">
+                            <div className="flex items-center">
+                              <span className="text-sm mr-2">Your Rating:</span>
+                              {renderStars(booking.rating)}
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="mt-4 flex items-center justify-between">
+                          <span className="font-medium">{booking.price}</span>
+                          <div className="flex items-center text-booking-secondary">
+                            <span className="text-sm font-medium mr-1">View Details</span>
+                            <ChevronRight size={16} />
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </div>
-                </Card>
+                      </CardContent>
+                    </div>
+                  </Card>
+                </DialogTrigger>
                 
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
@@ -406,6 +617,10 @@ const Bookings = () => {
                         src={booking.image} 
                         alt={booking.expertName} 
                         className="w-16 h-16 rounded-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "https://via.placeholder.com/150?text=Expert";
+                        }}
                       />
                       <div>
                         <h3 className="font-bold">{booking.expertName}</h3>
@@ -428,7 +643,7 @@ const Bookings = () => {
                       
                       <div className="flex justify-between">
                         <span className="text-gray-600 dark:text-gray-400">Duration:</span>
-                        <span>{booking.duration}</span>
+                        <span>{booking.duration} min</span>
                       </div>
                       
                       <div className="flex justify-between">
@@ -445,7 +660,7 @@ const Bookings = () => {
                     {booking.status === "completed" && booking.review && (
                       <div className="pt-2 border-t">
                         <h4 className="font-medium mb-1">Your Review:</h4>
-                        <div className="mb-2">{renderStars(booking.rating)}</div>
+                        <div className="mb-2">{renderStars(booking.rating || 0)}</div>
                         <p className="text-sm text-gray-600 dark:text-gray-400">{booking.review}</p>
                       </div>
                     )}
@@ -453,8 +668,12 @@ const Bookings = () => {
                     {booking.status === "cancelled" && (
                       <div className="pt-2 border-t">
                         <h4 className="font-medium mb-1">Cancellation Details:</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Reason: {booking.cancellationReason}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Refund: {booking.refundStatus}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          Reason: {booking.cancellationReason || "No reason provided"}
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Refund: {booking.refundStatus || "Not applicable"}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -466,15 +685,17 @@ const Bookings = () => {
                     
                     <div className="flex space-x-2">
                       {booking.status === "completed" && !booking.review && (
-                        <Button>Leave Review</Button>
+                        <Button onClick={() => handleLeaveReview(booking.id)}>
+                          Leave Review
+                        </Button>
                       )}
                       
                       {booking.status === "completed" && (
                         <Button variant="outline">Download Receipt</Button>
                       )}
                       
-                      {booking.status === "cancelled" && (
-                        <Button onClick={() => navigate(`/expert/${booking.id.split('-')[0]}`)}>
+                      {booking.status === "cancelled" && booking.expertId && (
+                        <Button onClick={() => navigate(`/expert/${booking.expertId}`)}>
                           Book Again
                         </Button>
                       )}
