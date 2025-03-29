@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Calendar, Clock, DollarSign, Users, Star, Bell, Settings, MessageSquare, Loader } from "lucide-react";
+import { Calendar, Clock, DollarSign, Users, Star, Bell, Settings, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -38,7 +38,17 @@ const ExpertDashboard = () => {
         // Fetch upcoming bookings
         const { data: bookingsData, error: bookingsError } = await supabase
           .from('bookings')
-          .select('*')
+          .select(`
+            id,
+            client_name,
+            client_id,
+            date,
+            time,
+            duration,
+            status,
+            service_type,
+            created_at
+          `)
           .eq('expert_id', user.id)
           .gte('date', new Date().toISOString())
           .order('date', { ascending: true })
@@ -88,46 +98,93 @@ const ExpertDashboard = () => {
           setUpcomingBookings(formattedBookings.length > 0 ? formattedBookings : []);
         }
 
-        // Fetch statistics data
-        const { data: statsData, error: statsError } = await supabase
-          .from('expert_stats')
-          .select('*')
+        // Fetch total clients count
+        const { count: clientsCount, error: clientsCountError } = await supabase
+          .from('bookings')
+          .select('client_id', { count: 'exact', head: true })
           .eq('expert_id', user.id)
-          .single();
+          .not('client_id', 'is', null);
 
-        if (statsError) {
-          console.error("Error fetching stats:", statsError);
+        // Fetch average rating
+        const { data: ratingsData, error: ratingsError } = await supabase
+          .from('reviews')
+          .select('rating')
+          .eq('expert_id', user.id);
+
+        let avgRating = 0;
+        if (!ratingsError && ratingsData && ratingsData.length > 0) {
+          avgRating = (ratingsData.reduce((sum, review) => sum + review.rating, 0) / ratingsData.length).toFixed(1);
+        }
+
+        // Fetch this month's earnings
+        const currentMonth = new Date().getMonth() + 1;
+        const currentYear = new Date().getFullYear();
+        const { data: earningsData, error: earningsError } = await supabase
+          .from('payments')
+          .select('amount')
+          .eq('expert_id', user.id)
+          .gte('created_at', `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`);
+
+        let monthlyEarnings = 0;
+        if (!earningsError && earningsData) {
+          monthlyEarnings = earningsData.reduce((sum, payment) => sum + payment.amount, 0);
+        }
+
+        // Fetch total hours
+        const { data: hoursData, error: hoursError } = await supabase
+          .from('bookings')
+          .select('duration')
+          .eq('expert_id', user.id)
+          .eq('status', 'completed');
+
+        let totalHours = 0;
+        if (!hoursError && hoursData) {
+          totalHours = Math.round(hoursData.reduce((sum, booking) => sum + (booking.duration || 0), 0) / 60);
+        }
+
+        // Set stats based on fetched data or use fallbacks if tables don't exist
+        if (clientsCountError || ratingsError || earningsError || hoursError) {
+          console.log("Some stats tables don't exist yet, using placeholder data");
           
-          // Default stats if expert_stats table doesn't exist
-          setStats([
-            { title: "Total Clients", value: 0, icon: <Users size={20} /> },
-            { title: "Avg. Rating", value: "0.0", icon: <Star size={20} /> },
-            { title: "This Month", value: "$0", icon: <DollarSign size={20} /> },
-            { title: "Total Hours", value: "0", icon: <Clock size={20} /> },
-          ]);
+          // Check if expert_stats table exists as a fallback
+          const { data: statsData, error: statsError } = await supabase
+            .from('expert_stats')
+            .select('*')
+            .eq('expert_id', user.id)
+            .single();
           
-          // Default metrics
-          setMetrics({
-            responseRate: 0,
-            completionRate: 0
-          });
+          if (!statsError && statsData) {
+            setStats([
+              { title: "Total Clients", value: statsData?.total_clients || 0, icon: <Users size={20} /> },
+              { title: "Avg. Rating", value: statsData?.average_rating?.toFixed(1) || "0.0", icon: <Star size={20} /> },
+              { title: "This Month", value: `$${statsData?.earnings_this_month || 0}`, icon: <DollarSign size={20} /> },
+              { title: "Total Hours", value: statsData?.total_hours?.toString() || "0", icon: <Clock size={20} /> },
+            ]);
+            
+            setMetrics({
+              responseRate: statsData?.response_rate || 0,
+              completionRate: statsData?.completion_rate || 0
+            });
+          } else {
+            // Use default values if no stats are available
+            setStats([
+              { title: "Total Clients", value: 0, icon: <Users size={20} /> },
+              { title: "Avg. Rating", value: "0.0", icon: <Star size={20} /> },
+              { title: "This Month", value: "$0", icon: <DollarSign size={20} /> },
+              { title: "Total Hours", value: "0", icon: <Clock size={20} /> },
+            ]);
+          }
         } else {
-          // Format the stats data
+          // Use actual fetched values
           setStats([
-            { title: "Total Clients", value: statsData?.total_clients || 0, icon: <Users size={20} /> },
-            { title: "Avg. Rating", value: statsData?.average_rating?.toFixed(1) || "0.0", icon: <Star size={20} /> },
-            { title: "This Month", value: `$${statsData?.earnings_this_month || 0}`, icon: <DollarSign size={20} /> },
-            { title: "Total Hours", value: statsData?.total_hours?.toString() || "0", icon: <Clock size={20} /> },
+            { title: "Total Clients", value: clientsCount || 0, icon: <Users size={20} /> },
+            { title: "Avg. Rating", value: avgRating || "0.0", icon: <Star size={20} /> },
+            { title: "This Month", value: `$${monthlyEarnings}`, icon: <DollarSign size={20} /> },
+            { title: "Total Hours", value: totalHours.toString(), icon: <Clock size={20} /> },
           ]);
-          
-          // Set performance metrics
-          setMetrics({
-            responseRate: statsData?.response_rate || 0,
-            completionRate: statsData?.completion_rate || 0
-          });
         }
         
-        // Fetch real-time performance metrics (if implemented)
+        // Fetch expert performance metrics
         const { data: performanceData, error: performanceError } = await supabase
           .from('expert_performance')
           .select('response_rate, completion_rate')
@@ -139,6 +196,36 @@ const ExpertDashboard = () => {
             responseRate: performanceData.response_rate || 0,
             completionRate: performanceData.completion_rate || 0
           });
+        } else {
+          // Calculate response rate from messages if possible
+          const { data: messagesData, error: messagesError } = await supabase
+            .from('messages')
+            .select('*')
+            .eq('recipient_id', user.id);
+            
+          if (!messagesError && messagesData) {
+            const totalMessages = messagesData.length;
+            const respondedMessages = messagesData.filter(msg => msg.is_responded).length;
+            const responseRate = totalMessages > 0 ? Math.round((respondedMessages / totalMessages) * 100) : 0;
+            
+            // Calculate completion rate from bookings
+            const { data: allBookings, error: allBookingsError } = await supabase
+              .from('bookings')
+              .select('*')
+              .eq('expert_id', user.id)
+              .lt('date', new Date().toISOString());
+              
+            if (!allBookingsError && allBookings) {
+              const totalPastBookings = allBookings.length;
+              const completedBookings = allBookings.filter(booking => booking.status === 'completed').length;
+              const completionRate = totalPastBookings > 0 ? Math.round((completedBookings / totalPastBookings) * 100) : 0;
+              
+              setMetrics({
+                responseRate: responseRate,
+                completionRate: completionRate
+              });
+            }
+          }
         }
       } catch (error) {
         console.error("Error in fetchDashboardData:", error);
