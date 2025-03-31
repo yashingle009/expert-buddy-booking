@@ -10,6 +10,7 @@ import Layout from "@/components/Layout";
 import Index from "./pages/Index";
 import Categories from "./pages/Categories";
 import ExpertProfile from "./pages/ExpertProfile";
+import ExpertDirectory from "./pages/ExpertDirectory";
 import Bookings from "./pages/Bookings";
 import Profile from "./pages/Profile";
 import SignIn from "./pages/SignIn";
@@ -36,6 +37,7 @@ const App = () => {
                   <Route index element={<Index />} />
                   <Route path="/categories" element={<Categories />} />
                   <Route path="/categories/:categoryId" element={<Categories />} />
+                  <Route path="/experts" element={<ExpertDirectory />} />
                   <Route path="/expert/:expertId" element={<ExpertProfile />} />
                 </Route>
                 

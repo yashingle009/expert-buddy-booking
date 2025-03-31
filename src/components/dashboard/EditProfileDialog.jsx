@@ -42,6 +42,8 @@ const EditProfileDialog = ({ open, onOpenChange }) => {
           full_name: `${formData.firstName} ${formData.lastName}`,
           bio: formData.bio,
           avatar_url: formData.avatarUrl,
+          expertise: formData.expertise,
+          is_expert: user.userType === 'expert',
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);

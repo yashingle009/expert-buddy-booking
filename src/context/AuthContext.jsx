@@ -98,11 +98,56 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Update user profile
-  const updateProfile = (profileData) => {
+  const updateProfile = async (profileData) => {
     const updatedUser = { ...user, ...profileData };
     setUser(updatedUser);
     localStorage.setItem("user", JSON.stringify(updatedUser));
     setIsProfileComplete(true);
+    
+    // Also update the profiles table in Supabase
+    try {
+      // Check if a profile exists for this user
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+      
+      if (existingProfile) {
+        // Update existing profile
+        await supabase
+          .from('profiles')
+          .update({
+            full_name: `${updatedUser.firstName || ''} ${updatedUser.lastName || ''}`.trim(),
+            bio: updatedUser.bio,
+            avatar_url: updatedUser.avatarUrl,
+            expertise: updatedUser.expertise,
+            is_expert: updatedUser.userType === 'expert',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+      } else {
+        // Create new profile
+        await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            full_name: `${updatedUser.firstName || ''} ${updatedUser.lastName || ''}`.trim(),
+            bio: updatedUser.bio,
+            avatar_url: updatedUser.avatarUrl,
+            expertise: updatedUser.expertise,
+            is_expert: updatedUser.userType === 'expert',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+      }
+      
+      console.log("Profile updated in Supabase");
+    } catch (error) {
+      console.error("Error updating profile in Supabase:", error);
+    }
+    
+    return updatedUser;
   };
 
   // Upload and save profile image
@@ -149,11 +194,48 @@ export const AuthProvider = ({ children }) => {
       setUser(updatedUser);
       localStorage.setItem("user", JSON.stringify(updatedUser));
       
+      // Update profile in Supabase
+      try {
+        await supabase
+          .from('profiles')
+          .update({ avatar_url: imageUrl })
+          .eq('id', user.id);
+      } catch (updateError) {
+        console.error("Error updating avatar in Supabase:", updateError);
+      }
+      
       return imageUrl;
     } catch (error) {
       console.error("Error in uploadProfileImage:", error);
       throw error;
     }
+  };
+
+  // Update user data directly
+  const updateUserData = async (userData) => {
+    // Update local state
+    setUser(userData);
+    localStorage.setItem("user", JSON.stringify(userData));
+    
+    // Update profile in Supabase
+    if (userData.id) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({
+            full_name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
+            bio: userData.bio,
+            avatar_url: userData.avatarUrl,
+            expertise: userData.expertise,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userData.id);
+      } catch (error) {
+        console.error("Error in updateUserData:", error);
+      }
+    }
+    
+    return userData;
   };
 
   return (
@@ -166,6 +248,7 @@ export const AuthProvider = ({ children }) => {
         signOut, 
         updateProfile,
         uploadProfileImage,
+        updateUserData,
         isExpert: user?.userType === "expert",
         isLoadingUserType
       }}
