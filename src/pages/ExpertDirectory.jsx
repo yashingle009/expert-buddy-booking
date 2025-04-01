@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Star, MapPin, Filter, Search, Users, Clock } from "lucide-react";
@@ -125,6 +124,7 @@ const ExpertDirectory = () => {
       </section>
 
       {isLoading ? (
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <Card key={i} className="p-4">
@@ -140,6 +140,7 @@ const ExpertDirectory = () => {
           ))}
         </div>
       ) : error ? (
+        
         <Card className="p-8 text-center">
           <h3 className="text-xl font-bold text-red-500 mb-2">Error</h3>
           <p>{error}</p>
@@ -151,6 +152,7 @@ const ExpertDirectory = () => {
           </Button>
         </Card>
       ) : filteredExperts.length === 0 ? (
+        
         <Card className="p-8 text-center">
           <h3 className="text-xl font-bold mb-2">No Experts Found</h3>
           {searchQuery ? (

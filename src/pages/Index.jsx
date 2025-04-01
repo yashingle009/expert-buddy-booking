@@ -1,4 +1,5 @@
 
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   Search, 
@@ -11,37 +12,52 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const navigate = useNavigate();
+  const [featuredExperts, setFeaturedExperts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock data for featured experts
-  const featuredExperts = [
-    {
-      id: "1",
-      name: "Dr. Sarah Johnson",
-      specialty: "Tax Consultant",
-      rating: 4.9,
-      reviews: 124,
-      image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80"
-    },
-    {
-      id: "2",
-      name: "Mark Williams",
-      specialty: "Legal Advisor",
-      rating: 4.8,
-      reviews: 98,
-      image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80"
-    },
-    {
-      id: "3",
-      name: "Jennifer Lee",
-      specialty: "Financial Advisor",
-      rating: 4.7,
-      reviews: 87,
-      image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80"
-    }
-  ];
+  // Fetch featured experts from database
+  useEffect(() => {
+    const fetchFeaturedExperts = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Get featured experts (limit to 3)
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('is_expert', true)
+          .order('created_at', { ascending: false })
+          .limit(3);
+        
+        if (error) {
+          console.error("Error fetching featured experts:", error);
+          return;
+        }
+        
+        // Transform data to match the expected format
+        const transformedExperts = data.map(expert => ({
+          id: expert.id,
+          name: expert.full_name || "Expert User",
+          specialty: expert.expertise || "Professional Consultant",
+          rating: expert.rating || 4.5,
+          reviews: Math.floor(Math.random() * 100) + 10, // Random review count for demo
+          image: expert.avatar_url || "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80"
+        }));
+        
+        setFeaturedExperts(transformedExperts);
+      } catch (error) {
+        console.error("Error in fetching featured experts:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFeaturedExperts();
+  }, []);
 
   // Mock data for categories
   const categories = [
@@ -60,7 +76,7 @@ const Index = () => {
       expertName: "Mark Williams",
       service: "Legal Consultation",
       date: "Tomorrow, 10:00 AM",
-      image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80"
+      image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80"
     }
   ];
 
@@ -153,34 +169,57 @@ const Index = () => {
       <section className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="section-title">Featured Experts</h2>
-          <button className="text-booking-secondary flex items-center text-sm font-medium">
+          <button
+            onClick={() => navigate("/experts")} 
+            className="text-booking-secondary flex items-center text-sm font-medium"
+          >
             View all <ArrowRight size={16} className="ml-1" />
           </button>
         </div>
         <div className="space-y-4">
-          {featuredExperts.map((expert) => (
-            <div 
-              key={expert.id}
-              onClick={() => handleExpertClick(expert.id)}
-              className="float-card p-4 flex items-center space-x-4 cursor-pointer"
-            >
-              <img 
-                src={expert.image} 
-                alt={expert.name} 
-                className="w-16 h-16 rounded-full object-cover border-2 border-white dark:border-gray-800 shadow-md"
-              />
-              <div className="flex-1">
-                <h3 className="font-semibold">{expert.name}</h3>
-                <p className="text-gray-600 dark:text-gray-400">{expert.specialty}</p>
-                <div className="flex items-center mt-1">
-                  <Star size={14} className="text-yellow-500 fill-yellow-500" />
-                  <span className="ml-1 text-sm font-medium">{expert.rating}</span>
-                  <span className="ml-1 text-xs text-gray-500">({expert.reviews} reviews)</span>
+          {isLoading ? (
+            // Show loading skeletons if loading
+            [1, 2, 3].map((i) => (
+              <Card key={i} className="p-4">
+                <div className="flex items-start space-x-4">
+                  <div className="bg-gray-200 dark:bg-gray-700 w-16 h-16 rounded-full animate-pulse" />
+                  <div className="space-y-2 flex-1">
+                    <div className="bg-gray-200 dark:bg-gray-700 h-4 w-3/4 rounded animate-pulse" />
+                    <div className="bg-gray-200 dark:bg-gray-700 h-4 w-1/2 rounded animate-pulse" />
+                    <div className="bg-gray-200 dark:bg-gray-700 h-4 w-1/4 rounded animate-pulse" />
+                  </div>
                 </div>
+              </Card>
+            ))
+          ) : featuredExperts.length > 0 ? (
+            featuredExperts.map((expert) => (
+              <div 
+                key={expert.id}
+                onClick={() => handleExpertClick(expert.id)}
+                className="float-card p-4 flex items-center space-x-4 cursor-pointer"
+              >
+                <img 
+                  src={expert.image} 
+                  alt={expert.name} 
+                  className="w-16 h-16 rounded-full object-cover border-2 border-white dark:border-gray-800 shadow-md"
+                />
+                <div className="flex-1">
+                  <h3 className="font-semibold">{expert.name}</h3>
+                  <p className="text-gray-600 dark:text-gray-400">{expert.specialty}</p>
+                  <div className="flex items-center mt-1">
+                    <Star size={14} className="text-yellow-500 fill-yellow-500" />
+                    <span className="ml-1 text-sm font-medium">{expert.rating}</span>
+                    <span className="ml-1 text-xs text-gray-500">({expert.reviews} reviews)</span>
+                  </div>
+                </div>
+                <ArrowRight size={20} className="text-gray-400" />
               </div>
-              <ArrowRight size={20} className="text-gray-400" />
-            </div>
-          ))}
+            ))
+          ) : (
+            <Card className="p-6 text-center">
+              <p>No featured experts available at the moment.</p>
+            </Card>
+          )}
         </div>
       </section>
     </div>
