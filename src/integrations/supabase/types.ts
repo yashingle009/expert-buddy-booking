@@ -9,59 +9,86 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      experts: {
+        Row: {
+          about: string | null
+          bio: string | null
+          category_id: number
+          created_at: string | null
+          education: string | null
+          experience: string | null
+          id: string
+          languages: string[] | null
+          location: string | null
+          price: number | null
+          specializations: string[] | null
+          title: string | null
+          updated_at: string | null
+          verified_status: boolean | null
+        }
+        Insert: {
+          about?: string | null
+          bio?: string | null
+          category_id: number
+          created_at?: string | null
+          education?: string | null
+          experience?: string | null
+          id: string
+          languages?: string[] | null
+          location?: string | null
+          price?: number | null
+          specializations?: string[] | null
+          title?: string | null
+          updated_at?: string | null
+          verified_status?: boolean | null
+        }
+        Update: {
+          about?: string | null
+          bio?: string | null
+          category_id?: number
+          created_at?: string | null
+          education?: string | null
+          experience?: string | null
+          id?: string
+          languages?: string[] | null
+          location?: string | null
+          price?: number | null
+          specializations?: string[] | null
+          title?: string | null
+          updated_at?: string | null
+          verified_status?: boolean | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           bio: string | null
-          created_at: string | null
-          email: string | null
-          full_name: string | null
+          first_name: string | null
           id: string
-          is_expert: boolean | null
-          member_since: string | null
-          phone: string | null
+          last_name: string | null
+          role: Database["public"]["Enums"]["user_role"]
           updated_at: string | null
+          user_type: string
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
-          created_at?: string | null
-          email?: string | null
-          full_name?: string | null
+          first_name?: string | null
           id: string
-          is_expert?: boolean | null
-          member_since?: string | null
-          phone?: string | null
+          last_name?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
+          user_type?: string
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
-          created_at?: string | null
-          email?: string | null
-          full_name?: string | null
+          first_name?: string | null
           id?: string
-          is_expert?: boolean | null
-          member_since?: string | null
-          phone?: string | null
+          last_name?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
-        }
-        Relationships: []
-      }
-      user_types: {
-        Row: {
-          created_at: string
-          id: string
-          user_type: string
-        }
-        Insert: {
-          created_at?: string
-          id: string
-          user_type: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
           user_type?: string
         }
         Relationships: []
@@ -71,10 +98,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "user" | "expert" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
