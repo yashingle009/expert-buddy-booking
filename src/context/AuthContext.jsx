@@ -24,46 +24,50 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Fetch user type from Supabase when user changes
+  // Fetch user profile from Supabase when user changes
   useEffect(() => {
-    const getUserTypeFromSupabase = async () => {
+    const getUserProfileFromSupabase = async () => {
       if (!user?.id) return;
 
       try {
         setIsLoadingUserType(true);
-        console.log("Fetching user type for:", user.id);
+        console.log("Fetching user profile for:", user.id);
         
         // Using ID as identifier 
         const { data, error } = await supabase
-          .from('user_types')
-          .select('user_type')
+          .from('profiles')
+          .select('*')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
 
         if (error) {
-          console.error("Error fetching user type:", error);
+          console.error("Error fetching user profile:", error);
           return;
         }
 
         if (data) {
-          console.log("User type from database:", data.user_type);
-          // Update user object with user type from database
+          console.log("User profile from database:", data);
+          // Update user object with data from database
           const updatedUser = { 
             ...user, 
-            userType: data.user_type 
+            userType: data.user_type || user.userType,
+            firstName: data.first_name || user.firstName,
+            lastName: data.last_name || user.lastName,
+            bio: data.bio || user.bio,
+            avatarUrl: data.avatar_url || user.avatarUrl
           };
           setUser(updatedUser);
           localStorage.setItem("user", JSON.stringify(updatedUser));
         }
       } catch (error) {
-        console.error("Error in getUserTypeFromSupabase:", error);
+        console.error("Error in getUserProfileFromSupabase:", error);
       } finally {
         setIsLoadingUserType(false);
       }
     };
 
     if (user?.id) {
-      getUserTypeFromSupabase();
+      getUserProfileFromSupabase();
     }
   }, [user?.id]);
 
@@ -120,6 +124,8 @@ export const AuthProvider = ({ children }) => {
         await supabase
           .from('profiles')
           .update({
+            first_name: updatedUser.firstName,
+            last_name: updatedUser.lastName,
             full_name: fullName,
             bio: updatedUser.bio,
             avatar_url: updatedUser.avatarUrl,
@@ -136,12 +142,15 @@ export const AuthProvider = ({ children }) => {
           .from('profiles')
           .insert({
             id: user.id,
+            first_name: updatedUser.firstName,
+            last_name: updatedUser.lastName,
             full_name: fullName,
             bio: updatedUser.bio,
             avatar_url: updatedUser.avatarUrl,
             expertise: updatedUser.expertise,
             location: updatedUser.location,
             phone: updatedUser.phone,
+            user_type: updatedUser.userType,
             is_expert: updatedUser.userType === 'expert',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -172,6 +181,17 @@ export const AuthProvider = ({ children }) => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `${fileName}`;
+      
+      // Create the bucket if it doesn't exist
+      const { data: bucketData, error: bucketError } = await supabase.storage
+        .createBucket('profileimages', {
+          public: true,
+          fileSizeLimit: 1024 * 1024 * 2 // 2MB
+        });
+      
+      if (bucketError && !bucketError.message.includes('already exists')) {
+        console.error("Error creating bucket:", bucketError);
+      }
       
       console.log("Uploading to path:", filePath, "in bucket: profileimages");
 
@@ -230,6 +250,8 @@ export const AuthProvider = ({ children }) => {
         await supabase
           .from('profiles')
           .update({
+            first_name: userData.firstName,
+            last_name: userData.lastName,
             full_name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
             bio: userData.bio,
             avatar_url: userData.avatarUrl,

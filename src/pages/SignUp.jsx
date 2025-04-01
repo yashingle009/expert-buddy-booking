@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Navigate, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -47,28 +46,16 @@ const SignUpPage = () => {
       
       console.log("Creating user profile and type in Supabase:", userType, "for user ID:", userId);
       
-      // Save user type to Supabase
-      const { error: userTypeError } = await supabase
-        .from('user_types')
-        .insert({
-          id: userId,
-          user_type: userType
-        });
-        
-      if (userTypeError) {
-        console.error("Error saving user type:", userTypeError);
-        toast.error("There was an issue setting up your account");
-        setIsLoading(false);
-        return;
-      }
-      
       // Create a profile entry in the profiles table
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
           id: userId,
+          first_name: firstName,
+          last_name: lastName,
           full_name: `${firstName} ${lastName}`.trim(),
           email: email,
+          user_type: userType,
           is_expert: userType === "expert",
           member_since: new Date().toISOString(),
           created_at: new Date().toISOString(),
@@ -82,7 +69,7 @@ const SignUpPage = () => {
         return;
       }
       
-      console.log("User profile and type saved successfully to Supabase");
+      console.log("User profile saved successfully to Supabase");
       
       // Sign in the user (this will save to localStorage)
       await signIn(userData);
