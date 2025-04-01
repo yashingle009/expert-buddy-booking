@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Star, MapPin, Filter, Search } from "lucide-react";
+import { Star, MapPin, Filter, Search, Users, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -59,7 +59,7 @@ const ExpertDirectory = () => {
     );
   };
 
-  // Placeholder data for experts with missing information
+  // Enhance expert display data with additional information
   const getExpertDisplay = (expert) => {
     return {
       name: expert.full_name || "Expert User",
@@ -67,7 +67,9 @@ const ExpertDirectory = () => {
       location: expert.location || "Remote",
       rating: expert.rating || 0,
       avatar: expert.avatar_url || "",
-      expertise: expert.expertise || "Consulting"
+      expertise: expert.expertise || "Consulting",
+      joinedDate: expert.member_since ? new Date(expert.member_since).toLocaleDateString() : "Recently joined",
+      bio: expert.bio || "Professional consultant ready to help with your needs."
     };
   };
 
@@ -77,7 +79,8 @@ const ExpertDirectory = () => {
       const expertData = getExpertDisplay(expert);
       return expertData.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
              expertData.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-             expertData.expertise?.toLowerCase().includes(searchQuery.toLowerCase());
+             expertData.expertise?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+             expertData.bio?.toLowerCase().includes(searchQuery.toLowerCase());
     }
     return true;
   });
@@ -89,23 +92,35 @@ const ExpertDirectory = () => {
         <p className="text-gray-600 dark:text-gray-400">
           Connect with professionals in various fields
         </p>
+        
+        <div className="flex items-center mt-2 text-sm">
+          <Users size={16} className="mr-1 text-booking-secondary" />
+          <span className="font-medium">{experts.length} experts available</span>
+        </div>
       </section>
 
       {/* Search and Filter Bar */}
       <section className="mb-6">
-        <div className="flex space-x-2">
+        <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
           <div className="relative flex-1">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search size={20} className="text-gray-500" />
             </div>
             <input
               type="text"
-              placeholder="Search experts..."
+              placeholder="Search experts by name, title or expertise..."
               className="input-field pl-10 w-full p-2 border rounded-lg"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+          <Button 
+            variant="outline"
+            className="flex items-center"
+            onClick={() => setSearchQuery("")}
+          >
+            Clear Search
+          </Button>
         </div>
       </section>
 
@@ -176,10 +191,20 @@ const ExpertDirectory = () => {
                       {renderExpertRating(displayData.rating)}
                     </div>
                     
-                    <div className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
-                      <MapPin size={14} className="mr-1" />
-                      {displayData.location}
+                    <div className="mt-2 flex flex-wrap gap-2 text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center">
+                        <MapPin size={14} className="mr-1" />
+                        {displayData.location}
+                      </div>
+                      <div className="flex items-center">
+                        <Clock size={14} className="mr-1" />
+                        {displayData.joinedDate}
+                      </div>
                     </div>
+                    
+                    <p className="mt-2 text-sm text-gray-600 line-clamp-2">
+                      {displayData.bio}
+                    </p>
                     
                     <div className="mt-3 flex justify-between items-center">
                       <Badge variant="secondary">
