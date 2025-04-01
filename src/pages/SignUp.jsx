@@ -45,24 +45,44 @@ const SignUpPage = () => {
       // Save the user to our simulated storage
       addUserToStorage(userData);
       
-      console.log("Saving user type to Supabase:", userType, "for user ID:", userId);
+      console.log("Creating user profile and type in Supabase:", userType, "for user ID:", userId);
       
       // Save user type to Supabase
-      const { error } = await supabase
+      const { error: userTypeError } = await supabase
         .from('user_types')
         .insert({
           id: userId,
           user_type: userType
         });
         
-      if (error) {
-        console.error("Error saving user type:", error);
+      if (userTypeError) {
+        console.error("Error saving user type:", userTypeError);
         toast.error("There was an issue setting up your account");
         setIsLoading(false);
         return;
       }
       
-      console.log("User type saved successfully to Supabase");
+      // Create a profile entry in the profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          full_name: `${firstName} ${lastName}`.trim(),
+          email: email,
+          is_expert: userType === "expert",
+          member_since: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+      
+      if (profileError) {
+        console.error("Error creating profile:", profileError);
+        toast.error("There was an issue creating your profile");
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log("User profile and type saved successfully to Supabase");
       
       // Sign in the user (this will save to localStorage)
       await signIn(userData);

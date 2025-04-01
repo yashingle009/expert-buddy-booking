@@ -44,11 +44,11 @@ const ProfileCompletionDialog = ({ open, onOpenChange }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Update profile with the new information
-    updateProfile(formData);
+    await updateProfile(formData);
     
     // Close the dialog
     onOpenChange(false);

@@ -27,13 +27,13 @@ export const AuthProvider = ({ children }) => {
   // Fetch user type from Supabase when user changes
   useEffect(() => {
     const getUserTypeFromSupabase = async () => {
-      if (!user?.email) return;
+      if (!user?.id) return;
 
       try {
         setIsLoadingUserType(true);
-        console.log("Fetching user type for:", user.email);
+        console.log("Fetching user type for:", user.id);
         
-        // Using email as identifier since we don't have real auth.uid() yet
+        // Using ID as identifier 
         const { data, error } = await supabase
           .from('user_types')
           .select('user_type')
@@ -113,15 +113,19 @@ export const AuthProvider = ({ children }) => {
         .eq('id', user.id)
         .single();
       
+      const fullName = `${updatedUser.firstName || ''} ${updatedUser.lastName || ''}`.trim();
+      
       if (existingProfile) {
         // Update existing profile
         await supabase
           .from('profiles')
           .update({
-            full_name: `${updatedUser.firstName || ''} ${updatedUser.lastName || ''}`.trim(),
+            full_name: fullName,
             bio: updatedUser.bio,
             avatar_url: updatedUser.avatarUrl,
             expertise: updatedUser.expertise,
+            location: updatedUser.location,
+            phone: updatedUser.phone,
             is_expert: updatedUser.userType === 'expert',
             updated_at: new Date().toISOString()
           })
@@ -132,13 +136,16 @@ export const AuthProvider = ({ children }) => {
           .from('profiles')
           .insert({
             id: user.id,
-            full_name: `${updatedUser.firstName || ''} ${updatedUser.lastName || ''}`.trim(),
+            full_name: fullName,
             bio: updatedUser.bio,
             avatar_url: updatedUser.avatarUrl,
             expertise: updatedUser.expertise,
+            location: updatedUser.location,
+            phone: updatedUser.phone,
             is_expert: updatedUser.userType === 'expert',
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            member_since: new Date().toISOString()
           });
       }
       
