@@ -1,19 +1,22 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Star, MapPin } from "lucide-react";
+import { Star, MapPin, Filter, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 const ExpertDirectory = () => {
   const navigate = useNavigate();
   const [experts, setExperts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
   useEffect(() => {
     const fetchExperts = async () => {
@@ -68,6 +71,17 @@ const ExpertDirectory = () => {
     };
   };
 
+  // Filter experts based on search query
+  const filteredExperts = experts.filter(expert => {
+    if (searchQuery) {
+      const expertData = getExpertDisplay(expert);
+      return expertData.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+             expertData.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+             expertData.expertise?.toLowerCase().includes(searchQuery.toLowerCase());
+    }
+    return true;
+  });
+
   return (
     <div className="page-container animate-fade-in py-8">
       <section className="mb-6">
@@ -75,6 +89,24 @@ const ExpertDirectory = () => {
         <p className="text-gray-600 dark:text-gray-400">
           Connect with professionals in various fields
         </p>
+      </section>
+
+      {/* Search and Filter Bar */}
+      <section className="mb-6">
+        <div className="flex space-x-2">
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search size={20} className="text-gray-500" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search experts..."
+              className="input-field pl-10 w-full p-2 border rounded-lg"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
       </section>
 
       {isLoading ? (
@@ -103,14 +135,18 @@ const ExpertDirectory = () => {
             Try Again
           </Button>
         </Card>
-      ) : experts.length === 0 ? (
+      ) : filteredExperts.length === 0 ? (
         <Card className="p-8 text-center">
           <h3 className="text-xl font-bold mb-2">No Experts Found</h3>
-          <p>There are currently no experts available. Check back later!</p>
+          {searchQuery ? (
+            <p>No experts match your search criteria. Try a different search term.</p>
+          ) : (
+            <p>There are currently no experts available. Check back later!</p>
+          )}
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {experts.map((expert) => {
+          {filteredExperts.map((expert) => {
             const displayData = getExpertDisplay(expert);
             
             return (
