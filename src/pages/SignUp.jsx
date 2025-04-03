@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useFirebase } from "@/context/FirebaseContext";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { addUserToStorage } from "@/utils/userStorage";
 
 const SignUpPage = () => {
@@ -32,6 +32,17 @@ const SignUpPage = () => {
     setIsLoading(true);
     
     try {
+      // Check if email already exists
+      const usersRef = collection(firestore, "users");
+      const q = query(usersRef, where("email", "==", email));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        toast.error("Email already in use. Please use a different email.");
+        setIsLoading(false);
+        return;
+      }
+      
       // Firebase sign up
       const firebaseUser = await signUpWithEmail(email, password);
       
@@ -45,6 +56,24 @@ const SignUpPage = () => {
         createdAt: new Date(),
         updatedAt: new Date()
       });
+      
+      // If expert, also create an entry in experts collection
+      if (userType === "expert") {
+        await setDoc(doc(firestore, "experts", firebaseUser.uid), {
+          userId: firebaseUser.uid,
+          firstName,
+          lastName,
+          email,
+          specialization: "",
+          experience: "",
+          rate: "",
+          bio: "",
+          qualifications: "",
+          availability: "weekdays",
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
       
       // Create user object
       const userData = {
@@ -71,7 +100,7 @@ const SignUpPage = () => {
       }
     } catch (error) {
       console.error("Error during signup:", error);
-      toast.error("Failed to create account");
+      toast.error(error.message || "Failed to create account");
     } finally {
       setIsLoading(false);
     }

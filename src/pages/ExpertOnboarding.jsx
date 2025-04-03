@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { useFirebase } from "@/context/FirebaseContext";
+import { doc, updateDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +14,7 @@ import { ArrowLeft, Upload, Clock, BadgeCheck } from "lucide-react";
 const ExpertOnboarding = () => {
   const navigate = useNavigate();
   const { user, updateProfile, uploadProfileImage, isExpert } = useAuth();
+  const { firestore } = useFirebase();
   const [activeStep, setActiveStep] = useState(1);
   const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
@@ -63,11 +66,39 @@ const ExpertOnboarding = () => {
     if (activeStep > 1) setActiveStep(prev => prev - 1);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    updateProfile(formData);
-    toast.success("Expert profile created successfully!");
-    navigate("/expert-dashboard");
+    try {
+      // Update both collections - main user profile
+      await updateDoc(doc(firestore, "users", user.id), {
+        bio: formData.bio,
+        updatedAt: new Date()
+      });
+      
+      // Update expert-specific data
+      await updateDoc(doc(firestore, "experts", user.id), {
+        specialization: formData.specialization,
+        experience: formData.experience,
+        rate: formData.rate,
+        bio: formData.bio,
+        qualifications: formData.qualifications,
+        availability: formData.availability,
+        isProfileComplete: true,
+        updatedAt: new Date()
+      });
+      
+      // Also update the local user data
+      updateProfile({
+        ...formData,
+        isProfileComplete: true
+      });
+      
+      toast.success("Expert profile created successfully!");
+      navigate("/expert-dashboard");
+    } catch (error) {
+      console.error("Error saving expert profile:", error);
+      toast.error("Failed to save expert profile");
+    }
   };
 
   return (
