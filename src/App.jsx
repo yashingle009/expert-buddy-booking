@@ -30,9 +30,9 @@ const App = () => {
         <FirebaseProvider>
           <AuthProvider>
             <TooltipProvider>
-              <Toaster />
-              <Sonner />
               <BrowserRouter>
+                <Toaster />
+                <Sonner />
                 <Routes>
                   {/* Public Routes */}
                   <Route path="/" element={<Layout />}>
