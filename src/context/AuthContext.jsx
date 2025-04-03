@@ -1,6 +1,5 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 const AuthContext = createContext(null);
 
@@ -8,7 +7,6 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isProfileComplete, setIsProfileComplete] = useState(false);
-  const [isLoadingUserType, setIsLoadingUserType] = useState(false);
 
   // Check local storage on initial load
   useEffect(() => {
@@ -23,53 +21,6 @@ export const AuthProvider = ({ children }) => {
       );
     }
   }, []);
-
-  // Fetch user profile from Supabase when user changes
-  useEffect(() => {
-    const getUserProfileFromSupabase = async () => {
-      if (!user?.id) return;
-
-      try {
-        setIsLoadingUserType(true);
-        console.log("Fetching user profile for:", user.id);
-        
-        // Using ID as identifier 
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (error) {
-          console.error("Error fetching user profile:", error);
-          return;
-        }
-
-        if (data) {
-          console.log("User profile from database:", data);
-          // Update user object with data from database
-          const updatedUser = { 
-            ...user, 
-            userType: data.user_type || user.userType,
-            firstName: data.first_name || user.firstName,
-            lastName: data.last_name || user.lastName,
-            bio: data.bio || user.bio,
-            avatarUrl: data.avatar_url || user.avatarUrl
-          };
-          setUser(updatedUser);
-          localStorage.setItem("user", JSON.stringify(updatedUser));
-        }
-      } catch (error) {
-        console.error("Error in getUserProfileFromSupabase:", error);
-      } finally {
-        setIsLoadingUserType(false);
-      }
-    };
-
-    if (user?.id) {
-      getUserProfileFromSupabase();
-    }
-  }, [user?.id]);
 
   // Sign in function
   const signIn = async (userData) => {
@@ -108,61 +59,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("user", JSON.stringify(updatedUser));
     setIsProfileComplete(true);
     
-    // Also update the profiles table in Supabase
-    try {
-      // Check if a profile exists for this user
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .single();
-      
-      const fullName = `${updatedUser.firstName || ''} ${updatedUser.lastName || ''}`.trim();
-      
-      if (existingProfile) {
-        // Update existing profile
-        await supabase
-          .from('profiles')
-          .update({
-            first_name: updatedUser.firstName,
-            last_name: updatedUser.lastName,
-            full_name: fullName,
-            bio: updatedUser.bio,
-            avatar_url: updatedUser.avatarUrl,
-            expertise: updatedUser.expertise,
-            location: updatedUser.location,
-            phone: updatedUser.phone,
-            is_expert: updatedUser.userType === 'expert',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', user.id);
-      } else {
-        // Create new profile
-        await supabase
-          .from('profiles')
-          .insert({
-            id: user.id,
-            first_name: updatedUser.firstName,
-            last_name: updatedUser.lastName,
-            full_name: fullName,
-            bio: updatedUser.bio,
-            avatar_url: updatedUser.avatarUrl,
-            expertise: updatedUser.expertise,
-            location: updatedUser.location,
-            phone: updatedUser.phone,
-            user_type: updatedUser.userType,
-            is_expert: updatedUser.userType === 'expert',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            member_since: new Date().toISOString()
-          });
-      }
-      
-      console.log("Profile updated in Supabase");
-    } catch (error) {
-      console.error("Error updating profile in Supabase:", error);
-    }
-    
     return updatedUser;
   };
 
@@ -174,62 +70,14 @@ export const AuthProvider = ({ children }) => {
         return null;
       }
       
-      // Log for debugging
-      console.log("Starting profile image upload for user:", user.id);
+      // For now, we'll use a placeholder for the image URL
+      // In a production app, you would upload to Firebase Storage
+      const imageUrl = URL.createObjectURL(file);
       
-      // Create a unique file name
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${fileName}`;
-      
-      // Create the bucket if it doesn't exist
-      const { data: bucketData, error: bucketError } = await supabase.storage
-        .createBucket('profileimages', {
-          public: true,
-          fileSizeLimit: 1024 * 1024 * 2 // 2MB
-        });
-      
-      if (bucketError && !bucketError.message.includes('already exists')) {
-        console.error("Error creating bucket:", bucketError);
-      }
-      
-      console.log("Uploading to path:", filePath, "in bucket: profileimages");
-
-      // Upload the file to Supabase storage
-      const { data, error } = await supabase.storage
-        .from('profileimages')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-
-      if (error) {
-        console.error("Error uploading image:", error);
-        throw error;
-      }
-
-      // Get the public URL for the uploaded file
-      const { data: publicURLData } = supabase.storage
-        .from('profileimages')
-        .getPublicUrl(filePath);
-
-      const imageUrl = publicURLData.publicUrl;
-      console.log("Image uploaded successfully. URL:", imageUrl);
-
       // Update the user's profile with the new image URL
       const updatedUser = { ...user, avatarUrl: imageUrl };
       setUser(updatedUser);
       localStorage.setItem("user", JSON.stringify(updatedUser));
-      
-      // Update profile in Supabase
-      try {
-        await supabase
-          .from('profiles')
-          .update({ avatar_url: imageUrl })
-          .eq('id', user.id);
-      } catch (updateError) {
-        console.error("Error updating avatar in Supabase:", updateError);
-      }
       
       return imageUrl;
     } catch (error) {
@@ -243,26 +91,6 @@ export const AuthProvider = ({ children }) => {
     // Update local state
     setUser(userData);
     localStorage.setItem("user", JSON.stringify(userData));
-    
-    // Update profile in Supabase
-    if (userData.id) {
-      try {
-        await supabase
-          .from('profiles')
-          .update({
-            first_name: userData.firstName,
-            last_name: userData.lastName,
-            full_name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
-            bio: userData.bio,
-            avatar_url: userData.avatarUrl,
-            expertise: userData.expertise,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', userData.id);
-      } catch (error) {
-        console.error("Error in updateUserData:", error);
-      }
-    }
     
     return userData;
   };
@@ -279,7 +107,6 @@ export const AuthProvider = ({ children }) => {
         uploadProfileImage,
         updateUserData,
         isExpert: user?.userType === "expert",
-        isLoadingUserType
       }}
     >
       {children}

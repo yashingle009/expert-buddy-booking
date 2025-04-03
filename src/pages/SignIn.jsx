@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Navigate, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useFirebase } from "@/context/FirebaseContext";
-import { supabase } from "@/integrations/supabase/client";
 import { getUserByEmail } from "@/utils/userStorage";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -16,7 +16,6 @@ const SignInPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [authProvider, setAuthProvider] = useState("supabase");
 
   // If user is already signed in, redirect to profile
   if (isAuthenticated) {
@@ -28,55 +27,30 @@ const SignInPage = () => {
     setIsLoading(true);
     
     try {
-      if (authProvider === "firebase") {
-        // Firebase authentication
-        await signInWithEmail(email, password);
-        navigate("/profile");
-      } else {
-        // Supabase authentication (keeping existing logic)
-        console.log("Signing in with email:", email);
-        
-        // Get the user from our simulated storage
-        const existingUser = getUserByEmail(email);
-        
-        if (!existingUser) {
-          toast.error("User not found. Please sign up first.");
-          setIsLoading(false);
-          return;
-        }
-        
-        console.log("Found user in storage:", existingUser);
-        
-        // Try to get user profile from Supabase
-        let { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', existingUser.id)
-          .maybeSingle();
-        
-        if (error) {
-          console.error("Error fetching user profile from Supabase:", error);
-        } else if (data) {
-          console.log("Retrieved user profile from Supabase:", data);
-          // Add the database values to the user object
-          existingUser.userType = data.user_type || existingUser.userType || "user";
-        }
-        
-        // Sign in the user (this will save to localStorage)
-        await signIn(existingUser);
-        
-        toast.success("Signed in successfully");
-        
-        // Redirect based on user type
-        if (existingUser.userType === "expert") {
-          navigate("/expert-dashboard");
-        } else {
-          navigate("/profile");
-        }
-      }
+      console.log("Signing in with Firebase, email:", email);
+      
+      // Firebase authentication
+      const firebaseUser = await signInWithEmail(email, password);
+      
+      // Create user object from Firebase user
+      const userData = {
+        id: firebaseUser.uid,
+        email: firebaseUser.email,
+        firstName: firebaseUser.displayName?.split(' ')[0] || '',
+        lastName: firebaseUser.displayName?.split(' ')[1] || '',
+        userType: 'user', // Default user type
+        avatarUrl: firebaseUser.photoURL
+      };
+      
+      // Sign in the user with our context
+      await signIn(userData);
+      
+      toast.success("Signed in successfully");
+      
+      navigate("/profile");
     } catch (error) {
       console.error("Error during sign in:", error);
-      toast.error("Failed to sign in");
+      toast.error(error.message || "Failed to sign in");
     } finally {
       setIsLoading(false);
     }
@@ -92,18 +66,6 @@ const SignInPage = () => {
           <p className="mt-2 text-sm text-gray-500">Sign in to your account</p>
         </div>
         <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md">
-          <Tabs 
-            defaultValue="supabase" 
-            value={authProvider}
-            onValueChange={setAuthProvider}
-            className="mb-6"
-          >
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="supabase">Supabase</TabsTrigger>
-              <TabsTrigger value="firebase">Firebase</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-medium mb-1">
@@ -133,7 +95,7 @@ const SignInPage = () => {
             </div>
             <div>
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing in..." : `Sign In with ${authProvider === "firebase" ? "Firebase" : "Supabase"}`}
+                {isLoading ? "Signing in..." : "Sign In with Firebase"}
               </Button>
             </div>
           </form>
