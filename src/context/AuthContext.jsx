@@ -27,17 +27,23 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log("Signing in with user data:", userData);
       
+      // Ensure isExpert flag is properly set based on userType
+      const updatedUserData = {
+        ...userData,
+        isExpert: userData.userType === "expert"
+      };
+      
       // First, save basic user information
-      setUser(userData);
+      setUser(updatedUserData);
       setIsAuthenticated(true);
-      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("user", JSON.stringify(updatedUserData));
       
       // Check if profile is complete
       setIsProfileComplete(
-        !!(userData.phone || userData.location || userData.bio)
+        !!(updatedUserData.phone || updatedUserData.location || updatedUserData.bio)
       );
       
-      return userData;
+      return updatedUserData;
     } catch (error) {
       console.error("Error in signIn:", error);
       throw error;
@@ -88,11 +94,17 @@ export const AuthProvider = ({ children }) => {
 
   // Update user data directly
   const updateUserData = async (userData) => {
-    // Update local state
-    setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
+    // Ensure isExpert flag is properly set based on userType
+    const updatedUserData = {
+      ...userData,
+      isExpert: userData.userType === "expert"
+    };
     
-    return userData;
+    // Update local state
+    setUser(updatedUserData);
+    localStorage.setItem("user", JSON.stringify(updatedUserData));
+    
+    return updatedUserData;
   };
 
   return (
@@ -106,7 +118,7 @@ export const AuthProvider = ({ children }) => {
         updateProfile,
         uploadProfileImage,
         updateUserData,
-        isExpert: user?.userType === "expert",
+        isExpert: user?.isExpert || user?.userType === "expert",
       }}
     >
       {children}

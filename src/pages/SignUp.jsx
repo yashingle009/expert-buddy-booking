@@ -46,8 +46,9 @@ const SignUpPage = () => {
       // Firebase sign up
       const firebaseUser = await signUpWithEmail(email, password);
       
-      // Create user profile in Firestore
-      await setDoc(doc(firestore, "users", firebaseUser.uid), {
+      // Create user profile in Firestore with proper userType
+      const userDocRef = doc(firestore, "users", firebaseUser.uid);
+      await setDoc(userDocRef, {
         firstName,
         lastName,
         email,
@@ -75,13 +76,14 @@ const SignUpPage = () => {
         });
       }
       
-      // Create user object
+      // Create user object with proper isExpert flag
       const userData = {
         id: firebaseUser.uid,
         firstName,
         lastName,
         email,
-        userType
+        userType,
+        isExpert: userType === "expert"
       };
       
       // Save to local storage (for demo purposes)
