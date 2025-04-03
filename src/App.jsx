@@ -54,12 +54,12 @@ const App = () => {
                     
                     {/* Expert Routes */}
                     <Route path="/expert-onboarding" element={
-                      <AuthWrapper>
+                      <AuthWrapper expertOnly={true}>
                         <ExpertOnboarding />
                       </AuthWrapper>
                     } />
                     <Route path="/expert-dashboard" element={
-                      <AuthWrapper>
+                      <AuthWrapper expertOnly={true}>
                         <ExpertDashboard />
                       </AuthWrapper>
                     } />

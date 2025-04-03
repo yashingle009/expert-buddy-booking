@@ -5,8 +5,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import ProfileCompletionDialog from "./ProfileCompletionDialog";
 
-const AuthWrapper = ({ children }) => {
-  const { isAuthenticated, isProfileComplete } = useAuth();
+const AuthWrapper = ({ children, expertOnly = false }) => {
+  const { isAuthenticated, isProfileComplete, isExpert } = useAuth();
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   
   useEffect(() => {
@@ -19,6 +19,17 @@ const AuthWrapper = ({ children }) => {
   if (!isAuthenticated) {
     toast.error("Please sign in to access this page");
     return <Navigate to="/sign-in" replace />;
+  }
+
+  // If the route is expert-only and the user is not an expert
+  if (expertOnly && !isExpert) {
+    toast.error("This page is only for experts");
+    return <Navigate to="/profile" replace />;
+  }
+  
+  // If the user is an expert and tries to access user-only pages
+  if (!expertOnly && isExpert && window.location.pathname === "/profile") {
+    return <Navigate to="/expert-dashboard" replace />;
   }
 
   return (

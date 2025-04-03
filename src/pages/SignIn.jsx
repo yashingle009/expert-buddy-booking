@@ -6,13 +6,12 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useFirebase } from "@/context/FirebaseContext";
-import { getUserByEmail } from "@/utils/userStorage";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { doc, getDoc } from "firebase/firestore";
 
 const SignInPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, signIn } = useAuth();
-  const { signInWithEmail } = useFirebase();
+  const { signInWithEmail, firestore } = useFirebase();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -32,22 +31,32 @@ const SignInPage = () => {
       // Firebase authentication
       const firebaseUser = await signInWithEmail(email, password);
       
-      // Create user object from Firebase user
-      const userData = {
+      // Get user information from Firestore to determine user type
+      const userDoc = await getDoc(doc(firestore, "users", firebaseUser.uid));
+      const userData = userDoc.data();
+      
+      // Create user object from Firebase user and Firestore data
+      const userObj = {
         id: firebaseUser.uid,
         email: firebaseUser.email,
-        firstName: firebaseUser.displayName?.split(' ')[0] || '',
-        lastName: firebaseUser.displayName?.split(' ')[1] || '',
-        userType: 'user', // Default user type
-        avatarUrl: firebaseUser.photoURL
+        firstName: userData?.firstName || '',
+        lastName: userData?.lastName || '',
+        userType: userData?.userType || 'user',
+        avatarUrl: firebaseUser.photoURL,
+        isExpert: userData?.userType === 'expert'
       };
       
       // Sign in the user with our context
-      await signIn(userData);
+      await signIn(userObj);
       
       toast.success("Signed in successfully");
       
-      navigate("/profile");
+      // Redirect based on user type
+      if (userData?.userType === 'expert') {
+        navigate("/expert-dashboard");
+      } else {
+        navigate("/profile");
+      }
     } catch (error) {
       console.error("Error during sign in:", error);
       toast.error(error.message || "Failed to sign in");
