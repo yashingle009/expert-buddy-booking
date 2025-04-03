@@ -12,43 +12,47 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const navigate = useNavigate();
   const [featuredExperts, setFeaturedExperts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch featured experts from database
+  // Use mock data instead of Supabase for featured experts
   useEffect(() => {
     const fetchFeaturedExperts = async () => {
       try {
         setIsLoading(true);
         
-        // Get featured experts (limit to 3)
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('is_expert', true)
-          .order('created_at', { ascending: false })
-          .limit(3);
+        // Mock expert data
+        const mockExperts = [
+          {
+            id: "1",
+            name: "Sarah Johnson",
+            specialty: "Tax Consultant",
+            rating: 4.9,
+            reviews: 124,
+            image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80"
+          },
+          {
+            id: "2",
+            name: "Mark Williams",
+            specialty: "Business Advisor",
+            rating: 4.7,
+            reviews: 89,
+            image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80"
+          },
+          {
+            id: "3",
+            name: "Emily Chen",
+            specialty: "Immigration Attorney",
+            rating: 4.8,
+            reviews: 56,
+            image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80"
+          }
+        ];
         
-        if (error) {
-          console.error("Error fetching featured experts:", error);
-          return;
-        }
-        
-        // Transform data to match the expected format
-        const transformedExperts = data.map(expert => ({
-          id: expert.id,
-          name: expert.full_name || "Expert User",
-          specialty: expert.expertise || "Professional Consultant",
-          rating: expert.rating || 4.5,
-          reviews: Math.floor(Math.random() * 100) + 10, // Random review count for demo
-          image: expert.avatar_url || "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80"
-        }));
-        
-        setFeaturedExperts(transformedExperts);
+        setFeaturedExperts(mockExperts);
       } catch (error) {
         console.error("Error in fetching featured experts:", error);
       } finally {

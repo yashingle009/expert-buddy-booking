@@ -34,7 +34,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { supabase } from "@/integrations/supabase/client";
 
 const Bookings = () => {
   const navigate = useNavigate();
@@ -52,171 +51,90 @@ const Bookings = () => {
       
       setIsLoading(true);
       try {
-        const currentDate = new Date().toISOString();
+        // For now, using mock data instead of Supabase
+        // In a complete implementation, we would use Firebase Firestore here
         
-        const { data: upcomingData, error: upcomingError } = await supabase
-          .from('bookings')
-          .select(`
-            id,
-            expert_id,
-            client_id,
-            client_name,
-            expert_name,
-            expert_specialty,
-            date,
-            time,
-            duration,
-            status,
-            location,
-            price,
-            notes,
-            service_type,
-            created_at,
-            expert_image
-          `)
-          .eq('client_id', user.id)
-          .gte('date', currentDate)
-          .order('date', { ascending: true });
+        const upcomingMockData = [
+          {
+            id: "1",
+            expertName: "Dr. Sarah Johnson",
+            specialty: "Tax Consultant",
+            date: "June 12, 2023",
+            time: "2:30 PM",
+            duration: 60,
+            location: "Virtual",
+            status: "confirmed",
+            price: "$120",
+            notes: "Please prepare your last year's tax documents for the session.",
+            image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
+          },
+          {
+            id: "2",
+            expertName: "Mark Williams",
+            specialty: "Business Advisor",
+            date: "June 18, 2023",
+            time: "10:00 AM",
+            duration: 30,
+            location: "Virtual",
+            status: "pending",
+            price: "$150",
+            notes: "Discussion about expanding your business to international markets.",
+            image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
+          },
+        ];
         
-        const { data: pastData, error: pastError } = await supabase
-          .from('bookings')
-          .select(`
-            id,
-            expert_id,
-            client_id,
-            client_name,
-            expert_name,
-            expert_specialty,
-            date,
-            time,
-            duration,
-            status,
-            location,
-            price,
-            notes,
-            service_type,
-            created_at,
-            expert_image,
-            rating,
-            review,
-            cancellation_reason,
-            refund_status
-          `)
-          .eq('client_id', user.id)
-          .lt('date', currentDate)
-          .order('date', { ascending: false });
+        const pastMockData = [
+          {
+            id: "3",
+            expertName: "Rebecca Chen",
+            specialty: "Immigration Lawyer",
+            date: "May 28, 2023",
+            time: "1:00 PM",
+            duration: 90,
+            location: "Virtual",
+            status: "completed",
+            price: "$200",
+            notes: "Visa application review and next steps discussion.",
+            rating: 5,
+            review: "Rebecca was extremely helpful and knowledgeable about the visa process. She answered all my questions clearly and provided excellent guidance.",
+            image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
+          },
+          {
+            id: "4",
+            expertName: "James Peterson",
+            specialty: "Financial Advisor",
+            date: "May 20, 2023",
+            time: "11:30 AM",
+            duration: 60,
+            location: "Virtual",
+            status: "completed",
+            price: "$175",
+            notes: "Retirement planning session. Please bring current investment portfolio details.",
+            rating: 4,
+            review: "James provided great advice tailored to my financial situation. I feel more confident about my retirement plan now.",
+            image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
+          },
+          {
+            id: "5",
+            expertName: "Emily Rodriguez",
+            specialty: "Estate Planning Attorney",
+            date: "May 15, 2023",
+            time: "3:00 PM",
+            duration: 45,
+            location: "Virtual",
+            status: "cancelled",
+            price: "$150",
+            cancellationReason: "Expert unavailable due to emergency",
+            refundStatus: "Processed on May 16, 2023",
+            image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
+          },
+        ];
         
-        if (upcomingError || pastError) {
-          console.error("Error fetching bookings:", upcomingError || pastError);
-          toast.error("Failed to load your bookings");
+        setBookings({
+          upcoming: upcomingMockData,
+          past: pastMockData
+        });
           
-          setBookings({
-            upcoming: [
-              {
-                id: "1",
-                expertName: "Dr. Sarah Johnson",
-                specialty: "Tax Consultant",
-                date: "June 12, 2023",
-                time: "2:30 PM",
-                duration: 60,
-                location: "Virtual",
-                status: "confirmed",
-                price: "$120",
-                notes: "Please prepare your last year's tax documents for the session.",
-                image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
-              },
-              {
-                id: "2",
-                expertName: "Mark Williams",
-                specialty: "Business Advisor",
-                date: "June 18, 2023",
-                time: "10:00 AM",
-                duration: 30,
-                location: "Virtual",
-                status: "pending",
-                price: "$150",
-                notes: "Discussion about expanding your business to international markets.",
-                image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
-              },
-            ],
-            past: [
-              {
-                id: "3",
-                expertName: "Rebecca Chen",
-                specialty: "Immigration Lawyer",
-                date: "May 28, 2023",
-                time: "1:00 PM",
-                duration: 90,
-                location: "Virtual",
-                status: "completed",
-                price: "$200",
-                notes: "Visa application review and next steps discussion.",
-                rating: 5,
-                review: "Rebecca was extremely helpful and knowledgeable about the visa process. She answered all my questions clearly and provided excellent guidance.",
-                image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
-              },
-              {
-                id: "4",
-                expertName: "James Peterson",
-                specialty: "Financial Advisor",
-                date: "May 20, 2023",
-                time: "11:30 AM",
-                duration: 60,
-                location: "Virtual",
-                status: "completed",
-                price: "$175",
-                notes: "Retirement planning session. Please bring current investment portfolio details.",
-                rating: 4,
-                review: "James provided great advice tailored to my financial situation. I feel more confident about my retirement plan now.",
-                image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
-              },
-              {
-                id: "5",
-                expertName: "Emily Rodriguez",
-                specialty: "Estate Planning Attorney",
-                date: "May 15, 2023",
-                time: "3:00 PM",
-                duration: 45,
-                location: "Virtual",
-                status: "cancelled",
-                price: "$150",
-                cancellationReason: "Expert unavailable due to emergency",
-                refundStatus: "Processed on May 16, 2023",
-                image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
-              },
-            ]
-          });
-        } else {
-          const formatBookings = (bookingsData) => {
-            return bookingsData?.map(booking => ({
-              id: booking.id,
-              expertName: booking.expert_name || "Expert",
-              specialty: booking.expert_specialty || "Consultant",
-              date: new Date(booking.date).toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric'
-              }),
-              time: booking.time || "12:00 PM",
-              duration: booking.duration || 60,
-              location: booking.location || "Virtual",
-              status: booking.status || "pending",
-              price: booking.price ? `$${booking.price}` : "$0",
-              notes: booking.notes || "",
-              image: booking.expert_image || "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80",
-              rating: booking.rating,
-              review: booking.review,
-              cancellationReason: booking.cancellation_reason,
-              refundStatus: booking.refund_status,
-              expertId: booking.expert_id
-            })) || [];
-          };
-          
-          setBookings({
-            upcoming: formatBookings(upcomingData),
-            past: formatBookings(pastData)
-          });
-        }
       } catch (error) {
         console.error("Error in fetchBookings:", error);
         toast.error("Failed to load bookings data");
@@ -294,20 +212,7 @@ const Bookings = () => {
 
   const handleCancelBooking = async (bookingId) => {
     try {
-      const { error } = await supabase
-        .from('bookings')
-        .update({ 
-          status: 'cancelled',
-          cancellation_reason: 'Cancelled by client'
-        })
-        .eq('id', bookingId);
-      
-      if (error) {
-        console.error("Error cancelling booking:", error);
-        toast.error("Failed to cancel booking");
-        return;
-      }
-      
+      // In a complete implementation, we would use Firebase here
       toast.success("Booking cancelled successfully");
       
       setBookings(prev => {
