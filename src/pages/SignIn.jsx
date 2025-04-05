@@ -33,7 +33,13 @@ const SignInPage = () => {
       
       // Get user information from Firestore to determine user type
       const userDoc = await getDoc(doc(firestore, "users", firebaseUser.uid));
+      
+      if (!userDoc.exists()) {
+        throw new Error("User profile not found");
+      }
+      
       const userData = userDoc.data();
+      console.log("Firestore user data:", userData);
       
       // Create user object from Firebase user and Firestore data
       const userObj = {
@@ -45,6 +51,8 @@ const SignInPage = () => {
         avatarUrl: firebaseUser.photoURL,
         isExpert: userData?.userType === 'expert'
       };
+      
+      console.log("User object before signIn:", userObj);
       
       // Sign in the user with our context
       await signIn(userObj);

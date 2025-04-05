@@ -1,13 +1,14 @@
 
 import { useState, useEffect } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import ProfileCompletionDialog from "./ProfileCompletionDialog";
 
 const AuthWrapper = ({ children, expertOnly = false }) => {
-  const { isAuthenticated, isProfileComplete, isExpert } = useAuth();
+  const { isAuthenticated, isProfileComplete, isExpert, user } = useAuth();
   const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const location = useLocation();
   
   useEffect(() => {
     // Show the dialog if the user is authenticated but hasn't completed their profile
@@ -16,6 +17,12 @@ const AuthWrapper = ({ children, expertOnly = false }) => {
     }
   }, [isAuthenticated, isProfileComplete]);
 
+  // Debug logs to help diagnose expert recognition issues
+  console.log("AuthWrapper - user:", user);
+  console.log("AuthWrapper - isExpert:", isExpert);
+  console.log("AuthWrapper - userType:", user?.userType);
+  console.log("AuthWrapper - location:", location.pathname);
+
   if (!isAuthenticated) {
     toast.error("Please sign in to access this page");
     return <Navigate to="/sign-in" replace />;
@@ -23,12 +30,14 @@ const AuthWrapper = ({ children, expertOnly = false }) => {
 
   // If the route is expert-only and the user is not an expert
   if (expertOnly && !isExpert) {
+    console.log("User is not an expert but trying to access expert-only page");
     toast.error("This page is only for experts");
     return <Navigate to="/profile" replace />;
   }
   
   // If the user is an expert and tries to access user-only pages
-  if (!expertOnly && isExpert && window.location.pathname === "/profile") {
+  if (!expertOnly && isExpert && location.pathname === "/profile") {
+    console.log("Expert trying to access user profile, redirecting to expert dashboard");
     return <Navigate to="/expert-dashboard" replace />;
   }
 
