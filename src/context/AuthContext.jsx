@@ -27,11 +27,13 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log("Signing in with user data:", userData);
       
-      // Ensure isExpert flag is properly set based on userType
+      // Explicitly set isExpert flag based on userType
       const updatedUserData = {
         ...userData,
         isExpert: userData.userType === "expert"
       };
+      
+      console.log("Updated user data with explicit isExpert flag:", updatedUserData);
       
       // First, save basic user information
       setUser(updatedUserData);

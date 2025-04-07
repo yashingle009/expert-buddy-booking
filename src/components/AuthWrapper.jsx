@@ -23,6 +23,7 @@ const AuthWrapper = ({ children, expertOnly = false }) => {
   console.log("AuthWrapper - userType:", user?.userType);
   console.log("AuthWrapper - location:", location.pathname);
 
+  // If not authenticated, redirect to sign-in
   if (!isAuthenticated) {
     toast.error("Please sign in to access this page");
     return <Navigate to="/sign-in" replace />;
